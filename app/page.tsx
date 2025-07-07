@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
-import './components.css'
 import { PenTool, Sparkles, ArrowLeft, ChevronDown, ChevronUp, CheckCircle, Circle, Clock, Copy } from "lucide-react"
 
 interface ProcessStep {
@@ -17,7 +18,7 @@ interface ProcessStep {
 
 interface Source {
   title: string
-  url: string 
+  url: string
 }
 
 export default function Component() {
@@ -158,60 +159,58 @@ export default function Component() {
 
     try {
       // 1. 백엔드에 POST 요청 (fetch API 사용)
-      const response = await fetch('https://ai-writing-web.vercel.app/api/generate-text', {
-        method: 'POST',
+      const response = await fetch("https://ai-writing-web.vercel.app/api/generate-text", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ inputText, expertiseLevel, textLength, textTone }),
-      });
+      })
 
-      if (!response.body) return;
+      if (!response.body) return
 
       // 2. 응답 스트림을 읽기 위한 Reader 생성
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
 
       // 3. 스트림 데이터를 실시간으로 읽어오기
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break; // 스트림 종료
+        const { done, value } = await reader.read()
+        if (done) break // 스트림 종료
+        if (!isGenerating) break
 
-        const chunk = decoder.decode(value);
-        
+        const chunk = decoder.decode(value)
+
         // SSE는 여러 'data:' 이벤트를 한 번에 보낼 수 있으므로 분리해서 처리
-        const lines = chunk.split('\n\n').filter(line => line.trim() !== '');
+        const lines = chunk.split("\n\n").filter((line) => line.trim() !== "")
         for (const line of lines) {
-          if (line.startsWith('data:')) {
-            const jsonString = line.replace('data: ', '');
-            const data = JSON.parse(jsonString);
+          if (line.startsWith("data:")) {
+            const jsonString = line.replace("data: ", "")
+            const data = JSON.parse(jsonString)
 
-            if(data.text) {
-              setGeneratedText(data.text); //차후 sources에 출처 데이터 집어넣기 + 실시간 카테고리추가, 주제 조언
+            if (data.text) {
+              setGeneratedText(data.text) //차후 sources에 출처 데이터 집어넣기 + 실시간 카테고리추가, 주제 조언
               completeAllSteps()
-              return;
+              return
             }
-            if(data.process) {
-                updateProcessStep(Number(data.process))
+            if (data.process) {
+              updateProcessStep(Number(data.process))
             }
-            if(data.source) {
-              data.source.forEach((s: { web: any }) => { //이거 데이터 안받아와짐 나중에 수정할것
-                console.log('Source:', s.web);
+            if (data.source) {
+              data.source.forEach((s: { web: any }) => {
                 const source: Source = {
                   title: s.web.title || "알 수 없음",
                   url: s.web.uri,
                 }
-                SetSources((prevSources) => [...prevSources, source]);
+                SetSources((prevSources) => [...prevSources, source])
               })
             }
           }
         }
-
       }
     } catch (error) {
-      console.error('Error fetching AI stream:', error);
+      console.error("Error fetching AI stream:", error)
     } finally {
-
     }
   }
 
@@ -237,7 +236,7 @@ export default function Component() {
       const animateText = () => {
         if (currentIndex < generatedText.length) {
           setDisplayedText(generatedText.slice(0, currentIndex + 1))
-          currentIndex+= 8
+          currentIndex += 8
           setTimeout(animateText, 5)
         } else {
           setDisplayedText(generatedText)
@@ -303,6 +302,8 @@ export default function Component() {
     setIsTextareaFocused(false)
     setIsTextModified(false)
     setIsRecentPostsOpen(false)
+
+
   }
 
   const toggleSettings = () => {
@@ -374,30 +375,30 @@ export default function Component() {
       const sourceIndex = Number.parseInt(match[1]) - 1
       const source = sources[sourceIndex]
 
-      if(source) {
+      if (source) {
         parts.push(
           <span key={`source-${match.index}`} className="inline-block relative group cursor-pointer">
             <span className="inline-block w-3 h-3 bg-gray-200 border border-gray-200 rounded-sm transition-colors duration-200">
-                <div
-                  className="absolute inset-0 flex items-center justify-center text-[9px] text-gray-400 cursor-pointer"
-                  onClick={() => window.open(source.url, "_blank")}
-                  title={source.title}
-                >
-                  {match[1]}
-                </div>
+              <div
+                className="absolute inset-0 flex items-center justify-center text-[9px] text-gray-400 cursor-pointer"
+                onClick={() => window.open(source.url, "_blank")}
+                title={source.title}
+              >
+                {match[1]}
+              </div>
             </span>
 
             {/* 플로팅 메시지 */}
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
               <div className="bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                {sources[Number(match[1])-1]?.title}
+                {sources[Number(match[1]) - 1]?.title}
               </div>
               {/* 화살표 */}
               <div className="absolute top-full left-1/2 transform -translate-x-1/2">
                 <div className="w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-800"></div>
               </div>
             </div>
-          </span>
+          </span>,
         )
       }
 
@@ -426,29 +427,16 @@ export default function Component() {
   return (
     <div className="min-h-screen bg-background">
       <div
-        className={`grid min-h-screen transition-all duration-500 ease-out ${
-          isSubmitted ? "grid-cols-[320px_1fr]" : "grid-cols-1"
+        className={`min-h-screen transition-all duration-300 ease-out ${
+          isSubmitted ? "md:grid md:grid-cols-[320px_1fr] flex flex-col" : "grid grid-cols-1"
         }`}
       >
         {/* 최근 글 목록 패널 - 오버레이 방식 */}
         {isRecentPostsOpen && (
-          <div className="fixed top-0 left-0 w-[280px] h-full bg-white border-r border-border flex flex-col animate-in slide-in-from-left-full fade-in-0 duration-500 z-50 shadow-lg">
+          <div className="fixed top-0 left-0 w-full md:w-[280px] h-full bg-white border-r border-border flex flex-col animate-in slide-in-from-left-full md:slide-in-from-left-full slide-in-from-bottom-full fade-in-0 duration-300 z-50 shadow-lg">
             {/* 계정 정보 - 고정 영역 */}
-            <div className="px-4 py-4 border-b border-border flex-shrink-0">
-              <div className="flex items-center space-x-3 mx-1">
-                <img
-                  src={accountInfo.avatar || "/placeholder.svg"}
-                  alt={accountInfo.name}
-                  className="w-10 h-10 rounded-full bg-gray-200"
-                />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-sm">{accountInfo.name}</h3>
-                  <p className="text-xs text-muted-foreground">{accountInfo.email}</p>
-                </div>
-                <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full font-medium">
-                  {accountInfo.plan}
-                </span>
-              </div>
+            <div className="border-b border-border flex-shrink-0 px-4 py-2.5">
+              
             </div>
 
             {/* 최근 글 목록 - 스크롤 가능한 영역 */}
@@ -492,12 +480,12 @@ export default function Component() {
 
         {/* 왼쪽 입력 영역 */}
         <div
-          className={`flex flex-col transition-all duration-5000 ease-out overflow-hidden ${
-            isSubmitted ? "p-4 lg:p-6 lg:border-r border-border" : "p-4 lg:p-8 justify-center items-center"
+          className={`flex flex-col transition-all duration-300 ease-out overflow-hidden ${
+            isSubmitted ? "p-3 md:p-4 lg:p-6 md:border-r border-border" : "p-4 md:p-8 justify-center items-center"
           }`}
         >
           <div
-            className={`flex flex-col w-full transition-all duration-5000 ease-out ${
+            className={`flex flex-col w-full transition-all duration-300 ease-out ${
               isSubmitted
                 ? "space-y-4 lg:space-y-5 max-w-full lg:max-w-sm"
                 : "space-y-4 lg:space-y-6 max-w-full lg:max-w-md"
@@ -505,26 +493,22 @@ export default function Component() {
           >
             {/* 로고 */}
             <div
-              className={`flex items-center space-x-2 transition-all duration-5000 ease-out ${
+              className={`flex items-center space-x-2 transition-all duration-300 ease-out ${
                 isSubmitted ? "opacity-85" : "opacity-100"
               }`}
             >
-              <div className="flex items-center justify-center w-10 h-10 bg-primary rounded-lg">
-                <PenTool className="w-5 h-5 text-primary-foreground" />
+              <div className="flex items-center justify-center w-8 md:w-10 h-8 md:h-10 bg-primary rounded-lg">
+                <PenTool className="w-4 md:w-5 h-4 md:h-5 text-primary-foreground" />
               </div>
               <div>
                 <h1
-                  className={`font-bold transition-all duration-1000 ease-out ${isSubmitted ? "text-xl" : "text-2xl"}`}
+                  className={`font-bold transition-all duration-300 ease-out ${
+                    isSubmitted ? "text-lg md:text-xl" : "text-xl md:text-2xl"
+                  }`}
                 >
                   AI Writer
                 </h1>
-                <p
-                  className={`text-muted-foreground transition-all duration-1000 ease-out ${
-                    isSubmitted ? "text-sm" : "text-sm"
-                  }`}
-                >
-                  AI 글쓰기 도우미
-                </p>
+                <p className="text-xs md:text-sm text-muted-foreground">AI 글쓰기 도우미</p>
               </div>
             </div>
 
@@ -532,7 +516,7 @@ export default function Component() {
             <div className="space-y-2">
               <Label
                 htmlFor="content"
-                className={`font-medium transition-all duration-5000 ease-out ${isSubmitted ? "text-sm" : "text-base"}`}
+                className={`font-medium transition-all duration-300 ease-out ${isSubmitted ? "text-sm" : "text-base"}`}
               >
                 글 주제를 입력하세요
               </Label>
@@ -543,29 +527,29 @@ export default function Component() {
                 onFocus={() => setIsTextareaFocused(true)}
                 onBlur={() => setIsTextareaFocused(false)}
                 placeholder={isSubmitted ? "여기에 글의 주제나 내용을 입력해주세요." : placeholderText}
-                className={`resize-none transition-all duration-500 ease-out p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border border-slate-300 focus:outline-none ${
+                className={`resize-none transition-all duration-300 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border border-slate-300 focus:outline-none text-sm md:text-base ${
                   isSubmitted
-                    ? "min-h-[140px] text-sm"
+                    ? "min-h-[120px] md:min-h-[140px]"
                     : isTextareaFocused || inputText.trim()
-                      ? "min-h-[200px]"
-                      : "min-h-[120px]"
+                      ? "min-h-[160px] md:min-h-[200px]"
+                      : "min-h-[100px] md:min-h-[120px]"
                 }`}
               />
 
               {/* 글쓰기 유형 버튼들 */}
               <div
-                className={`pt-1 transition-all duration-5000 ease-out ${isSubmitted ? "opacity-80" : "opacity-100"}`}
+                className={`pt-1 transition-all duration-300 ease-out ${isSubmitted ? "opacity-80" : "opacity-100"}`}
               >
-                <div className="flex flex-wrap gap-1.5 justify-start">
+                <div className="flex flex-wrap gap-2 justify-start">
                   {writingTypes.map((type) => (
                     <button
                       key={type.id}
                       onClick={() => handleWritingTypeClick(type)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                      className={`px-3 py-2 md:px-3 md:py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[36px] md:min-h-auto ${
                         activeWritingType === type.id
                           ? "bg-primary text-primary-foreground shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      } ${isSubmitted ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-xs"}`}
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                      }`}
                     >
                       {type.label}
                     </button>
@@ -575,7 +559,7 @@ export default function Component() {
             </div>
 
             {/* 설정 패널 */}
-            <div className={`transition-all duration-1000 ease-out ${isSubmitted ? "opacity-80" : "opacity-100"}`}>
+            <div className={`transition-all duration-300 ease-out ${isSubmitted ? "opacity-80" : "opacity-100"}`}>
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 <button
                   onClick={toggleSettings}
@@ -584,7 +568,7 @@ export default function Component() {
                   }`}
                 >
                   <Label
-                    className={`font-medium transition-all duration-1000 ease-out ${
+                    className={`font-medium transition-all duration-300 ease-out ${
                       isSubmitted ? "text-sm" : "text-base"
                     }`}
                   >
@@ -592,11 +576,11 @@ export default function Component() {
                   </Label>
                   {isSettingsOpen ? (
                     <ChevronUp
-                      className={`transition-all duration-1000 ease-out ${isSubmitted ? "w-4 h-4" : "w-5 h-5"}`}
+                      className={`transition-all duration-300 ease-out ${isSubmitted ? "w-4 h-4" : "w-5 h-5"}`}
                     />
                   ) : (
                     <ChevronDown
-                      className={`transition-all duration-1000 ease-out ${isSubmitted ? "w-4 h-4" : "w-5 h-5"}`}
+                      className={`transition-all duration-300 ease-out ${isSubmitted ? "w-4 h-4" : "w-5 h-5"}`}
                     />
                   )}
                 </button>
@@ -610,7 +594,7 @@ export default function Component() {
                     {/* 글 전문성 수준 */}
                     <div className="space-y-3">
                       <Label
-                        className={`font-medium transition-all duration-5000 ease-out ${
+                        className={`font-medium transition-all duration-300 ease-out ${
                           isSubmitted ? "text-sm" : "text-base"
                         }`}
                       >
@@ -625,7 +609,7 @@ export default function Component() {
                         className="w-full"
                       />
                       <div
-                        className={`flex justify-between text-muted-foreground transition-all duration-1000 ease-out ${
+                        className={`flex justify-between text-muted-foreground transition-all duration-300 ease-out ${
                           isSubmitted ? "text-xs" : "text-sm"
                         }`}
                       >
@@ -638,15 +622,22 @@ export default function Component() {
                     {/* 글 길이 */}
                     <div className="space-y-3">
                       <Label
-                        className={`font-medium transition-all duration-5000 ease-out ${
+                        className={`font-medium transition-all duration-300 ease-out ${
                           isSubmitted ? "text-sm" : "text-base"
                         }`}
                       >
                         글 길이
                       </Label>
-                      <Slider value={textLength} onValueChange={setTextLength} max={4} step={1} className="w-full" defaultValue={[2]} />
+                      <Slider
+                        value={textLength}
+                        onValueChange={setTextLength}
+                        max={4}
+                        step={1}
+                        className="w-full"
+                        defaultValue={[2]}
+                      />
                       <div
-                        className={`flex justify-between text-muted-foreground transition-all duration-1000 ease-out ${
+                        className={`flex justify-between text-muted-foreground transition-all duration-300 ease-out ${
                           isSubmitted ? "text-xs" : "text-sm"
                         }`}
                       >
@@ -659,15 +650,22 @@ export default function Component() {
                     {/* 글 톤 */}
                     <div className="space-y-3">
                       <Label
-                        className={`font-medium transition-all duration-5000 ease-out ${
+                        className={`font-medium transition-all duration-300 ease-out ${
                           isSubmitted ? "text-sm" : "text-base"
                         }`}
                       >
                         글 톤
                       </Label>
-                      <Slider value={textTone} onValueChange={setTextTone} max={4} step={1} defaultValue={[2]} className="w-full" />
+                      <Slider
+                        value={textTone}
+                        onValueChange={setTextTone}
+                        max={4}
+                        step={1}
+                        defaultValue={[2]}
+                        className="w-full"
+                      />
                       <div
-                        className={`flex justify-between text-muted-foreground transition-all duration-1000 ease-out ${
+                        className={`flex justify-between text-muted-foreground transition-all duration-300 ease-out ${
                           isSubmitted ? "text-xs" : "text-sm"
                         }`}
                       >
@@ -684,32 +682,32 @@ export default function Component() {
             {/* 제출/리셋 버튼 */}
             {!isSubmitted ? (
               <Button
-                className="w-full h-12 text-base transition-all duration-5000 ease-out"
+                className="w-full h-12 md:h-12 text-base transition-all duration-300 ease-out"
                 size="lg"
                 onClick={handleSubmit}
                 disabled={!inputText.trim()}
               >
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Sparkles className="w-5 h-5 md:w-4 md:h-4 mr-2" />
                 AI로 글 다듬기
               </Button>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3 md:space-y-2">
                 <Button
-                  className={`w-full h-10 text-sm transition-all duration-500 ease-out ${
+                  className={`w-full h-12 md:h-10 text-base md:text-sm transition-all duration-300 ease-out ${
                     !isGenerating && isTextModified ? "animate-in fade-in-0 slide-in-from-top-2" : ""
                   }`}
                   onClick={handleSubmit}
                   disabled={isGenerating || !inputText.trim()}
                 >
-                  <Sparkles className="w-4 h-4 mr-2" />
+                  <Sparkles className="w-5 h-5 md:w-4 md:h-4 mr-2" />
                   {isGenerating ? "생성 중.." : isTextModified ? "글 피드백" : "글 재생성"}
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full h-10 text-sm transition-all duration-5000 ease-out bg-transparent"
+                  className="w-full h-12 md:h-10 text-base md:text-sm transition-all duration-300 ease-out bg-transparent"
                   onClick={handleReset}
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 mr-2" />
                   다시 편집
                 </Button>
               </div>
@@ -719,13 +717,13 @@ export default function Component() {
 
         {/* 오른쪽 결과 영역 */}
         {isSubmitted && (
-          <div className="flex items-center justify-center bg-muted/20 transition-all ease-out p-4 lg:p-12 fade-in-0 duration-500">
-            <div className="w-full max-w-full lg:max-w-4xl space-y-4 lg:space-y-6">
-              <div className="flex items-center space-x-3 mb-8">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary-foreground" />
+          <div className="flex items-start md:items-center justify-center bg-muted/20 transition-all ease-out p-3 md:p-4 lg:p-12 fade-in-0 duration-300 min-h-screen md:min-h-0">
+            <div className="w-full max-w-full lg:max-w-4xl space-y-3 md:space-y-4 lg:space-y-6">
+              <div className="flex items-center space-x-2 md:space-x-3 mb-4 md:mb-8">
+                <div className="w-6 md:w-8 h-6 md:h-8 bg-primary rounded-full flex items-center justify-center">
+                  <Sparkles className="w-3 md:w-4 h-3 md:h-4 text-primary-foreground" />
                 </div>
-                <h2 className="text-2xl font-bold">
+                <h2 className="text-lg md:text-2xl font-bold">
                   {showProcessMap ? "AI가 글을 작성하고 있습니다" : "AI가 다듬은 결과"}
                 </h2>
               </div>
@@ -737,7 +735,7 @@ export default function Component() {
                       {processSteps.map((step, index) => (
                         <div
                           key={step.id}
-                          className={`flex items-center space-x-3 py-2 px-3 rounded transition-all duration-500 ${
+                          className={`flex items-center space-x-3 py-2 px-3 rounded transition-all duration-300 ${
                             step.status === "processing"
                               ? "bg-gray-50"
                               : step.status === "completed"
@@ -786,8 +784,7 @@ export default function Component() {
 
               {!isGenerating && displayedText && !isTextAnimating && !showProcessMap && (
                 <div className="space-y-4">
-
-                  {sources.length>0 && (
+                  {sources.length > 0 && (
                     // 출처 섹션
                     <div className="space-y-2">
                       <h3 className="text-sm font-medium text-gray-700">참고 출처</h3>
@@ -807,7 +804,7 @@ export default function Component() {
                   )}
 
                   {/* 복사하기 버튼 */}
-                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 transition-all duration-1000 ease-out opacity-100 translate-y-0">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 transition-all duration-300 ease-out opacity-100 translate-y-0">
                     <Button
                       variant="outline"
                       onClick={handleCopy}
@@ -835,10 +832,10 @@ export default function Component() {
 
         {/* 최근 글 목록 아이콘 (메인 화면에서만 표시) */}
         {!isSubmitted && (
-          <div className="fixed bottom-6 left-6 z-50">
+          <div className="fixed bottom-4 md:bottom-6 left-4 md:left-6 z-50">
             <button
               onClick={() => setIsRecentPostsOpen(!isRecentPostsOpen)}
-              className="w-10 h-10 text-gray-500 hover:text-gray-700 transition-colors duration-200 flex items-center justify-center hover:scale-105"
+              className="w-12 md:w-10 h-12 md:h-10 text-gray-500 hover:text-gray-700 active:text-gray-800 transition-colors duration-200 flex items-center justify-center hover:scale-105 active:scale-95 bg-white md:bg-transparent rounded-full md:rounded-none shadow-lg md:shadow-none"
               title="최근 글 목록"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -854,12 +851,13 @@ export default function Component() {
         )}
 
         {/* 플로팅 도움말 버튼 */}
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-4 md:bottom-6 right-4 md:right-6 z-50">
           <div className="relative">
             <button
               onMouseEnter={() => setShowHelpTooltip(true)}
               onMouseLeave={() => setShowHelpTooltip(false)}
-              className="w-10 h-10 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105"
+              onClick={() => setShowHelpTooltip(!showHelpTooltip)}
+              className="w-12 md:w-10 h-12 md:h-10 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95 text-base md:text-sm"
             >
               ?
             </button>
