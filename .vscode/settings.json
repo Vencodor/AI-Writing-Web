@@ -1,0 +1,27 @@
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "hooks": true,
+        "lib": true,
+        "node_modules": true,
+        ".gitignore": true,
+        "styles": true,
+        "public": true,
+        ".vscode": true,
+        ".next": true
+    },
+    "hide-files.files": [
+        "hooks",
+        "lib",
+        "node_modules",
+        ".gitignore",
+        "styles",
+        "public",
+        ".vscode",
+        ".next"
+    ]
+}
