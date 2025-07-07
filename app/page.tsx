@@ -158,7 +158,7 @@ export default function Component() {
 
     try {
       // 1. 백엔드에 POST 요청 (fetch API 사용)
-      const response = await fetch('https://ai-writing-web.vercel.app/generate-text', {
+      const response = await fetch('https://ai-writing-web.vercel.app/api/generate-text', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

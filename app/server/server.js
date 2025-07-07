@@ -36,7 +36,7 @@ const sendSseError = (res, message, error) => {
 };
 
 // AI 글쓰기 스트리밍을 위한 엔드포인트
-app.post('/generate-text', async (req, res) => {
+app.post('/api/generate-text', async (req, res) => {
   // 사용자로부터 입력값 받기
   const input = req.body.inputText;
   const expertiseLevel = req.body.expertiseLevel / 1 + 1;
