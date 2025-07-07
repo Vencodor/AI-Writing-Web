@@ -51,7 +51,7 @@ export default function Component() {
     name: "Admin",
     email: "aaa@example.com",
     avatar: "/placeholder.svg?height=40&width=40",
-    plan: "Primiun",
+    plan: "Premium",
   }
 
   // 최근 글 목록 더미 데이터
@@ -177,7 +177,6 @@ export default function Component() {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break // 스트림 종료
-        if (!isGenerating) break
 
         const chunk = decoder.decode(value)
 
