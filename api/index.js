@@ -4,7 +4,7 @@ const { GoogleGenAI } = require('@google/genai');
 const cors = require('cors');
 const e = require('express');
 const { send } = require('process');
-require("dotenv").config( {path: '../../.env'} );
+require("dotenv").config( {path: '../.env'} );
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_AI_KEY });
 console.log('GoogleGenAI initialized with API key:', process.env.GEMINI_AI_KEY);
