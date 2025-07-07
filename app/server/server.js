@@ -7,6 +7,7 @@ const { send } = require('process');
 require("dotenv").config();
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_AI_KEY });
+console.log('GoogleGenAI initialized with API key:', process.env.GEMINI_AI_KEY);
 
 const groundingTool = {
   googleSearch: {},
@@ -184,5 +185,5 @@ function addCitations(response) {
 }
 
 app.listen(PORT, () => {
-  console.log(`AI 글쓰기 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+  console.log(`AI 글쓰기 서버가 http://34.64.230.31:${PORT}/generate-text 에서 실행 중입니다.`);
 });
