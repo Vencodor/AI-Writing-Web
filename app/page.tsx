@@ -2,12 +2,14 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
 import { PenTool, Sparkles, ArrowLeft, ChevronDown, ChevronUp, CheckCircle, Circle, Clock, Copy } from "lucide-react"
+
+import "./components.css"
 
 interface ProcessStep {
   id: string
@@ -45,13 +47,15 @@ export default function Component() {
   const [isTextModified, setIsTextModified] = useState(false)
   const [sources, SetSources] = useState<Source[]>([])
   const [isRecentPostsOpen, setIsRecentPostsOpen] = useState(false)
+  const [showMoreTypes, setShowMoreTypes] = useState(false)
+  const [showUpdateLog, setShowUpdateLog] = useState(false)
 
   // 계정 정보 더미 데이터
   const accountInfo = {
     name: "Admin",
     email: "aaa@example.com",
     avatar: "/placeholder.svg?height=40&width=40",
-    plan: "Premium",
+    plan: "Primiun",
   }
 
   // 최근 글 목록 더미 데이터
@@ -79,12 +83,57 @@ export default function Component() {
     },
   ]
 
+  // 업데이트 로그 더미 데이터
+  const updateLogs = [
+    {
+      version: "v1.0.6",
+      date: "2025.07.08",
+      title: "AI 추천 기능 및 UI 개선",
+      changes: [
+        "AI 추천 글쓰기 유형 버튼 추가",
+        "텍스트 입력 시 자동 확장 기능 개선",
+        "더보기 버튼 호버 패널 안정성 향상",
+        "모바일 반응형 디자인 최적화",
+      ],
+      devNote: "더욱 직관적인 인터페이스와 새로운 기능을 준비중입니다.",
+    },
+    {
+      version: "v1.0.5",
+      date: "2025.07.07",
+      title: "성능 최적화 및 버그 수정",
+      changes: [
+        "AI 응답 속도 향상",
+        "피드백 처리절차 개선",
+        "기타 버그 수정 및 UI 개선",
+      ],
+      devNote: "더 빠르고 안정적인 서비스를 위해 백엔드 최적화를 진행했습니다.",
+    },
+    {
+      version: "v1.0.0",
+      date: "2025.07.06",
+      title: "서비스 오픈 - AI 글쓰기 도우미",
+      changes: [
+        "Gemini Pro 기반 AI 엔진 적용",
+        "실시간 글 생성 프로세스 시각화",
+        "출처 자동 인용 기능 추가",
+        "글쓰기 유형별 맞춤 설정 강화",
+      ],
+      devNote: "AI 도우미로 정교한 글쓰기를 지원합니다",
+    },
+  ]
+
   const writingTypes = [
+    { id: "ai-recommend", label: "AI추천", expertise: [2], length: [2], tone: [2] },
     { id: "academic", label: "학술", expertise: [4], length: [3], tone: [4] },
     { id: "review", label: "리뷰", expertise: [2], length: [3], tone: [0] },
     { id: "daily", label: "일상", expertise: [1], length: [2], tone: [0] },
     { id: "column", label: "칼럼", expertise: [4], length: [4], tone: [1] },
     { id: "general", label: "일반", expertise: [2], length: [2], tone: [2] },
+    { id: "business", label: "비즈니스", expertise: [3], length: [3], tone: [3] },
+    { id: "creative", label: "창작", expertise: [2], length: [4], tone: [1] },
+    { id: "technical", label: "기술", expertise: [4], length: [3], tone: [4] },
+    { id: "news", label: "뉴스", expertise: [3], length: [2], tone: [3] },
+    { id: "blog", label: "블로그", expertise: [1], length: [2], tone: [0] },
   ]
 
   const createInitialSteps = (): ProcessStep[] => [
@@ -146,6 +195,8 @@ export default function Component() {
   }
 
   // 프로세스 시작 함수
+
+  const generateUrl = 'https://ai-writing-web.vercel.app/api/generate-text'
   const startProcessing = async () => {
     // 초기화
     const initialSteps = createInitialSteps()
@@ -159,7 +210,7 @@ export default function Component() {
 
     try {
       // 1. 백엔드에 POST 요청 (fetch API 사용)
-      const response = await fetch("https://ai-writing-web.vercel.app/api/generate-text", {
+      const response = await fetch(generateUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -247,7 +298,8 @@ export default function Component() {
     }
   }, [generatedText, isGenerating])
 
-  // 텍스트 변경 감지
+  // 텍스트박스 변경 핸들러
+  const textRef = useRef<any>(null)
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value
     setInputText(newValue)
@@ -257,6 +309,13 @@ export default function Component() {
       setIsTextModified(true)
     } else if (isSubmitted && newValue == originalInputText) {
       setIsTextModified(false)
+    }
+
+    //텍스트박스 자동 늘리기
+    setInputText(e.target.value)
+    if (textRef.current) {
+      textRef.current.style.height = `auto`
+      textRef.current.style.height = `${textRef.current.scrollHeight}px`
     }
   }
 
@@ -301,8 +360,6 @@ export default function Component() {
     setIsTextareaFocused(false)
     setIsTextModified(false)
     setIsRecentPostsOpen(false)
-
-
   }
 
   const toggleSettings = () => {
@@ -434,9 +491,7 @@ export default function Component() {
         {isRecentPostsOpen && (
           <div className="fixed top-0 left-0 w-full md:w-[280px] h-full bg-white border-r border-border flex flex-col animate-in slide-in-from-left-full md:slide-in-from-left-full slide-in-from-bottom-full fade-in-0 duration-300 z-50 shadow-lg">
             {/* 계정 정보 - 고정 영역 */}
-            <div className="border-b border-border flex-shrink-0 px-4 py-2.5">
-              
-            </div>
+            <div className="border-b border-border flex-shrink-0 px-4 py-2.5"></div>
 
             {/* 최근 글 목록 - 스크롤 가능한 영역 */}
             <div className="flex-1 overflow-hidden">
@@ -487,27 +542,42 @@ export default function Component() {
             className={`flex flex-col w-full transition-all duration-300 ease-out ${
               isSubmitted
                 ? "space-y-4 lg:space-y-5 max-w-full lg:max-w-sm"
-                : "space-y-4 lg:space-y-6 max-w-full lg:max-w-md"
+                : "space-y-4 lg:space-y-6 max-w-full lg:max-w-xl"
             }`}
           >
             {/* 로고 */}
             <div
-              className={`flex items-center space-x-2 transition-all duration-300 ease-out ${
+              className={`flex flex-col space-y-2 transition-all duration-300 ease-out ${
                 isSubmitted ? "opacity-85" : "opacity-100"
               }`}
             >
-              <div className="flex items-center justify-center w-8 md:w-10 h-8 md:h-10 bg-primary rounded-lg">
-                <PenTool className="w-4 md:w-5 h-4 md:h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1
-                  className={`font-bold transition-all duration-300 ease-out ${
-                    isSubmitted ? "text-lg md:text-xl" : "text-xl md:text-2xl"
-                  }`}
-                >
-                  AI Writer
-                </h1>
-                <p className="text-xs md:text-sm text-muted-foreground">AI 글쓰기 도우미</p>
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center w-8 md:w-10 h-8 md:h-10 bg-primary rounded-lg">
+                  <PenTool className="w-4 md:w-5 h-4 md:h-5 text-primary-foreground" />
+                </div>
+
+                <div>
+                  <h1
+                    className={`font-bold transition-all duration-300 ease-out ${
+                      isSubmitted ? "text-lg md:text-xl" : "text-xl md:text-2xl"
+                    }`}
+                  >
+                    AI Writer
+                  </h1>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-xs md:text-sm text-muted-foreground">AI 글쓰기 도우미</p>
+                    {!isSubmitted && (
+                    <button
+                      onClick={() => setShowUpdateLog(true)}
+                      className="flex items-center space-x-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200 group"
+                    >
+                      <span className="text-xs text-gray-600 font-medium">{updateLogs[0].version}</span>
+                      <span className="text-xs text-gray-500">새로운 기능</span>
+                      <ChevronDown className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -525,26 +595,48 @@ export default function Component() {
                 onChange={handleInputChange}
                 onFocus={() => setIsTextareaFocused(true)}
                 onBlur={() => setIsTextareaFocused(false)}
+                ref={textRef}
                 placeholder={isSubmitted ? "여기에 글의 주제나 내용을 입력해주세요." : placeholderText}
-                className={`resize-none transition-all duration-300 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border border-slate-300 focus:outline-none text-sm md:text-base ${
+                className={`resize-none transition-all duration-400 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border-slate-300 focus:outline-none text-sm md:text-base border overflow-hidden ${
                   isSubmitted
                     ? "min-h-[120px] md:min-h-[140px]"
                     : isTextareaFocused || inputText.trim()
-                      ? "min-h-[160px] md:min-h-[200px]"
-                      : "min-h-[100px] md:min-h-[120px]"
-                }`}
+                      ? "md:min-h-[200px] w-full transform"
+                      : "min-h-[120px] w-full transform scale-100"
+                } ${inputText.length > 100 ? "min-h-[250px] md:min-h-[300px]" : ""} ${
+                  inputText.length > 300 ? "min-h-[350px] md:min-h-[400px]" : ""
+                } ${inputText.length > 500 ? "min-h-[450px] md:min-h-[500px]" : ""}`}
               />
 
               {/* 글쓰기 유형 버튼들 */}
               <div
                 className={`pt-1 transition-all duration-300 ease-out ${isSubmitted ? "opacity-80" : "opacity-100"}`}
               >
-                <div className="flex flex-wrap gap-2 justify-start">
-                  {writingTypes.map((type) => (
+                <div className="flex flex-wrap gap-2 justify-start relative">
+
+                  {/* AI추천 버튼 (그라데이션 효과) */}
+                  {isTextareaFocused && (
+                    <button
+                      onClick={() => handleWritingTypeClick(writingTypes[0])}
+                      className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative  overflow-hidden ${
+                        activeWritingType === writingTypes[0].id
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                      }`}
+                    >
+                      <span className="relative z-10">{writingTypes[0].label}</span>
+                      {activeWritingType !== writingTypes[0].id && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-300 via-indigo-500 to-sky-200 opacity-20"></div>
+                      )}
+                    </button>
+                  )}
+
+                  {/* 일반 버튼들 (처음 3개) */}
+                  {writingTypes.slice(1, 4).map((type) => (
                     <button
                       key={type.id}
                       onClick={() => handleWritingTypeClick(type)}
-                      className={`px-3 py-2 md:px-3 md:py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[36px] md:min-h-auto ${
+                      className={`px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto ${
                         activeWritingType === type.id
                           ? "bg-primary text-primary-foreground shadow-md"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
@@ -553,6 +645,46 @@ export default function Component() {
                       {type.label}
                     </button>
                   ))}
+
+                  {/* 더보기 버튼 */}
+                  <div className="relative">
+                    <button
+                      className="px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                      onClick={() => setShowMoreTypes(!showMoreTypes)}
+                    >
+                      더보기..
+                    </button>
+
+                    {/* 툴팁 형태의 추가 버튼들 */}
+                    {showMoreTypes && (
+                      <div
+                        className="absolute animate-in fade-in-0 top-full left-0 mt-2 opacity-100 transition-opacity duration-200 z-10"
+                        onMouseLeave={() => setShowMoreTypes(false)}
+                      >
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px]">
+                          <div className="flex flex-wrap gap-2">
+                            {writingTypes.slice(4).map((type) => (
+                              <button
+                                key={type.id}
+                                onClick={() => handleWritingTypeClick(type)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                  activeWritingType === type.id
+                                    ? "bg-primary text-primary-foreground shadow-md"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                                }`}
+                              >
+                                {type.label}
+                              </button>
+                            ))}
+                          </div>
+                          {/* 툴팁 화살표 */}
+                          <div className="absolute bottom-full left-4 transform translate-y-1">
+                            <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-white"></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -893,6 +1025,77 @@ export default function Component() {
             )}
           </div>
         </div>
+        {/* 업데이트 로그 팝업 */}
+        {showUpdateLog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 ">
+            <div className="bg-white rounded-lg shadow-xl max-w-xl w-full overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
+              {/* 헤더 */}
+              <div className="flex overflow-hidden items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">업데이트 로그</h2>
+                  <p className="text-sm text-gray-500 mt-1">AI Writer의 최신 업데이트 내역을 확인하세요</p>
+                </div>
+                <button
+                  onClick={() => setShowUpdateLog(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* 내용 */}
+              <div className="max-h-[calc(80vh-120px)] p-6 overflow-y-auto">
+                <div className="space-y-6">
+                  {updateLogs.map((log, index) => (
+                    <div key={log.version} className="relative">
+                      {/* 타임라인 라인 */}
+                      {index !== updateLogs.length - 1 && (
+                        <div className="absolute left-4 top-12 w-0.5 h-full bg-gray-200"></div>
+                      )}
+
+                      <div className="flex space-x-4">
+                        {/* 버전 아이콘 */}
+                        <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-white">
+                            {log.version.replace("v", "").split(".")[0]}
+                          </span>
+                        </div>
+
+                        {/* 내용 */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h3 className="font-semibold text-gray-900">{log.version}</h3>
+                            <span className="text-sm text-gray-500">{log.date}</span>
+                          </div>
+
+                          <h4 className="font-medium text-gray-800 mb-3">{log.title}</h4>
+
+                          <ul className="space-y-1 mb-4">
+                            {log.changes.map((change, changeIndex) => (
+                              <li key={changeIndex} className="flex items-start space-x-2 text-sm text-gray-600">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                <span>{change}</span>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r">
+                            <p className="text-sm text-blue-800">
+                              <span className="font-medium">Comment:</span> {log.devNote}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
