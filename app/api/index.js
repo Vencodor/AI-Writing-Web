@@ -4,7 +4,7 @@ const { GoogleGenAI } = require('@google/genai');
 const cors = require('cors');
 const e = require('express');
 const { send } = require('process');
-require("dotenv").config();
+require("dotenv").config( {path: '../../.env'} );
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_AI_KEY });
 console.log('GoogleGenAI initialized with API key:', process.env.GEMINI_AI_KEY);
@@ -93,7 +93,7 @@ app.post('/api/generate-text', async (req, res) => {
       config
     });
     res.write(`data: ${JSON.stringify({ process: '3' })}\n\n`);
-    console.log('Detail Response:', detailResponse.text);
+    //console.log('Detail Response:', detailResponse.text);
 
     const detailTextWithCitations = addCitations(detailResponse);
     const chunks = detailResponse.candidates[0]?.groundingMetadata?.groundingChunks;
@@ -117,7 +117,7 @@ app.post('/api/generate-text', async (req, res) => {
       contents: writePrompt,
     });
     res.write(`data: ${JSON.stringify({ process: '4' })}\n\n`);
-    //console.log('Write Response:', writeResponse.text);
+    console.log('Write Response:', writeResponse.text);
 
     // 5. [개선] 피드백 및 퇴고 단계
     let feedbackPrompt = `당신은 최고의 편집자입니다. 아래 '원본 글'을 다음 '수정 지침'에 맞게 완성도 높게 다듬어 주세요.
