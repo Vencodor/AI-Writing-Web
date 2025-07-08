@@ -131,7 +131,7 @@ async function improveKoreanText(userText) {
         contents: stage1Prompt,
     });
     const response = result.response;
-    const parsedResponse = parseJsonResponse(response.text());
+    const parsedResponse = parseJsonResponse(response.text);
     
     analysisData = parsedResponse.analysis;
     diagnosticsList = parsedResponse.diagnostics;
@@ -158,7 +158,7 @@ async function improveKoreanText(userText) {
         })
         .then(result => {
           const response = result.response;
-          const parsed = parseJsonResponse(response.text());
+          const parsed = parseJsonResponse(response.text);
           return {
             original: item.original_text_segment,
             rewritten: parsed.final_rewritten_text
