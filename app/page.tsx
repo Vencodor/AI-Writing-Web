@@ -141,12 +141,15 @@ export default function Component() {
     },
   ]
 
-  const exampleText = 
-`안녕하세요. 오늘은 수능 생윤 과목의 사상가 중 한명인 임마누엘 칸트의 사상에 대하여 알아볼것입니다.
+  const exampleText = `
+안녕하세요. 오늘은 수능 생윤 과목의 사상가 중 한명인 임마누엘 칸트의 사상에 대하여 알아볼것입니다.
+
 우선 칸트는 18세기 철학자입니다. 그는 엄격한 시간관리를 하는 사람으로 유명한데요, 그에 관련한 아주 유명한 일화를 하나 들자면 마을 사람들은 그가 정각에 산책을 나오지 않으면 시계를 의심하였다고 합니다.
+
 그러한 칸트의 사상으로는 '선의지'가 있습니다. 선의지란, 여타 모든것에 얽매이지 않고 오직 '도덕법칙에 대한 존경'만으로 그 행위를 해야한다는 개념인데요, 칸트는 이 선의지만이 무조건적으로 옳다고 주장하였습니다.
-그렇다면 어떤 것이 도덕법칙이 될 수 있을까요? 이것에 관해 칸트는 '네 행위의 준칙이 보편적 입법의 원리에 부합하도록 행위하여라' 라고 말하였습니다. 여기서 '보편적 입법의 원리에 부합'한다는 것은, 만일
-내 행위를 모든 사람들이 따라했을때에 문제가 생기지 않는다는것을 의미합니다
+
+그렇다면 어떤 것이 도덕법칙이 될 수 있을까요? 이것에 관해 칸트는 '네 행위의 준칙이 보편적 입법의 원리에 부합하도록 행위하여라' 라고 말하였습니다. 여기서 '보편적 입법의 원리에 부합'한다는 것은, 만일 내 행위를 모든 사람들이 따라했을때에 문제가 생기지 않는다는것을 의미합니다
+
 이상입니다. 감사합니다.
 `
 
@@ -508,12 +511,6 @@ export default function Component() {
     }
   }
 
-  const handleCloseRecentPosts = () => {
-    setTimeout(() => {
-      setIsRecentPostsOpen(false)
-    }, 300)
-  }
-
   const handleCloseUpdateLog = () => {
     setIsUpdateLogClosing(true)
     setTimeout(() => {
@@ -580,7 +577,7 @@ export default function Component() {
         {isRecentPostsOpen && (
           <div
             className="fixed inset-0 bg-black/15 z-40 animate-in fade-in-0 duration-300"
-            onClick={handleCloseRecentPosts}
+            onClick={() => {setIsRecentPostsOpen(false)}}
           />
         )}
 
@@ -653,7 +650,7 @@ export default function Component() {
                   onBlur={() => setIsTextareaFocused(false)}
                   ref={textRef}
                   placeholder={isSubmitted ? "여기에 글의 주제나 내용을 입력해주세요." : placeholderText}
-                  className={`resize-none transition-all duration-400 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border-slate-300 focus:outline-none text-sm md:text-base border overflow-hidden ${
+                  className={`resize-none transition-all duration-400 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border-slate-300 focus:outline-none text-sm md:text-base border ${
                     isSubmitted
                       ? "min-h-[120px] md:min-h-[140px]"
                       : isTextareaFocused || inputText.trim()
@@ -1054,7 +1051,7 @@ export default function Component() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                "?"
+                "@"
               )}
             </button>
 
