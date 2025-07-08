@@ -79,31 +79,38 @@ async function improveKoreanText(userText) {
     JSON Output:`;
 
   const getStage2Prompt = (analysis, diagnosticItem) => `
-    You are a world-class Korean linguist and professional editor. Your task is to rewrite a single text segment to perfection by following a structured reasoning process.
-
+    You are a world-class Korean linguist and professional editor. Your task is to rewrite a  
+    single text segment to perfection by following a structured reasoning process.
+        
     **1. Context from Overall Document Analysis:**
-    - Topic: ${analysis.topic}
-    - Tone: ${analysis.tone_and_manner}
-    - Purpose: ${analysis.purpose}
-
+      - Topic: ${analysis.topic}
+      - Tone: ${analysis.tone_and_manner}
+      - Purpose: ${analysis.purpose}
+        
     **2. Segment to Improve:**
-    - Original Text (Korean): "${diagnosticItem.original_text_segment}"
-    - Identified Issue: "${diagnosticItem.issue_type}"
-
-    **3. Your Task: Structured Reasoning and Refinement**
-    Follow these steps internally. Your final output must be a single JSON object containing only your reasoning_steps and the final_rewritten_text.
-
+      - Original Text (Korean): "${diagnosticItem.original_text_segment}"
+      - Identified Issue: "${diagnosticItem.issue_type}"
+      
+    **3. Your Task: Structured Reasoning and Refinement (Internal Process)**
+    Internally, follow these steps to refine the text. Do not output these steps.
+    - Step 1: Analyze the original text segment in the given context and identify the core
+      problem based on the 'Identified Issue'.
+    - Step 2: Draft a first version of the rewritten text, focusing on addressing the
+        identified issue while maintaining the overall topic, tone, and purpose.
+    - Step 3: Critically review the first draft for clarity, conciseness, naturalness, and
+      adherence to Korean linguistic standards.
+    - Step 4: Produce the final, polished version of the rewritten text, incorporating
+          improvements from the critique.
+      
     **4. Final Output Format:**
-    Provide your response as a single JSON object with the following keys. Do not add any text outside of the JSON structure.
+      Provide your response as a single JSON object with only the 'final_rewritten_text' key. 
+      Do not add any text outside of the JSON structure.
+      
     {
-      "reasoning_steps": {
-        "step_1_principle": "Your analysis from Step 1.",
-        "step_2_first_draft": "Your draft from Step 2.",
-        "step_3_critique": "Your critique from Step 3.",
-        "step_4_final_version_reasoning": "A brief note on what you improved from the draft to the final version."
-      },
-      "final_rewritten_text": "The polished Korean text from Step 4."
-    }`;
+      "final_rewritten_text": "The polished Korean text."
+      }
+      
+  `;
 
   /**
    * 모델이 반환한 텍스트에서 JSON만 깔끔하게 추출하는 헬퍼 함수.
@@ -139,7 +146,7 @@ async function improveKoreanText(userText) {
       console.log("수정할 항목을 찾지 못했습니다. 원본 텍스트를 반환합니다.");
       return userText;
     }
-    console.log(`1단계 완료: ${diagnosticsList.length}개의 수정 대상 발견.`);
+    console.log(`1단계 완료: ${diagnosticsList}`);
   } catch (error) {
     console.error("1단계 API 호출 중 오류 발생:", error);
     throw new Error("Failed to analyze text or parse diagnostics.");
