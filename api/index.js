@@ -46,9 +46,9 @@ const sendSseError = (res, message, error) => {
 async function improveKoreanText(userText) {
   // --- 모델 정의 ---
   // 1단계 (빠른 분석용)
-  const analysisModel = ai.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+  const analysisModel = "gemini-2.5-flash";
   // 2단계 (고품질 생성용)
-  const refinementModel = ai.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+  const refinementModel = "gemini-2.5-pro";
 
   // --- 프롬프트 템플릿 정의 ---
   const stage1Prompt = `
@@ -126,7 +126,10 @@ async function improveKoreanText(userText) {
   console.log("1단계: 텍스트 분석 및 진단 시작...");
   let analysisData, diagnosticsList;
   try {
-    const result = await analysisModel.generateContent(stage1Prompt);
+    const result = await ai.models.generateContent({
+        model: analysisModel,
+        contents: stage1Prompt,
+    });
     const response = result.response;
     const parsedResponse = parseJsonResponse(response.text());
     
@@ -149,7 +152,10 @@ async function improveKoreanText(userText) {
   try {
     const refinementPromises = diagnosticsList.map(item => {
       const prompt = getStage2Prompt(analysisData, item);
-      return refinementModel.generateContent(prompt)
+      return ai.models.generateContent({
+          model: refinementModel,
+          contents: prompt,
+        })
         .then(result => {
           const response = result.response;
           const parsed = parseJsonResponse(response.text());
