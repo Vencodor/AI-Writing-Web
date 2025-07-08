@@ -106,7 +106,7 @@ export default function Component() {
         "피드백 처리절차 수정",
         "로딩바 추가",
       ],
-      devNote: "더욱 직관적인 인터페이스와 새로운 기능을 준비중입니다.",
+      devNote: "글쓰기 피드백 기능을 강화하였습니다",
     },
     {
       version: "v1.0.6",
