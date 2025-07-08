@@ -64,7 +64,7 @@ const parseJsonResponse = (rawText) => {
 async function improveKoreanText(userText, res) {
   // --- 모델 정의 ---
   // 1단계 (빠른 분석용)
-  const analysisModel = "gemini-2.5-pro";
+  const analysisModel = "gemini-2.5-flash";
   // 2단계 (고품질 생성용)
   const refinementModel = "gemini-2.5-flash";
 
@@ -155,7 +155,7 @@ async function improveKoreanText(userText, res) {
   }
 
   res.write(`data: ${JSON.stringify({ diagnostics: diagnosticsList })}\n\n`)
-  res.write(`data: ${JSON.stringify({ process: '1' })}\n\n`)
+  res.write(`data: ${JSON.stringify({ process: '2' })}\n\n`)
 
   // --- 2단계: 원칙 기반 자기 개선 생성 (병렬 처리) ---
   try {
@@ -173,16 +173,16 @@ async function improveKoreanText(userText, res) {
           };
         });
     });
-    res.write(`data: ${JSON.stringify({ process: '2' })}\n\n`)
+    res.write(`data: ${JSON.stringify({ process: '3' })}\n\n`)
 
     const refinementResults = await Promise.all(refinementPromises);
 
     // --- 최종 결과물 조립 ---
     let finalText = userText;
-    refinementResults.forEach(res => {
+    refinementResults.forEach(refine => {
       // 원본 텍스트에서 수정 대상을 찾아 교체합니다.
-      console.log(`${res}`);
-      finalText = finalText.replace(res.original, res.rewritten);
+      console.log(`${JSON.stringify(refine)}`);
+      finalText = finalText.replace(refine.original, refine.rewritten);
     });
 
     return finalText;
