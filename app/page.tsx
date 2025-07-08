@@ -189,6 +189,8 @@ export default function Component() {
   const updateProcessStep = (stepIndex: number) => {
     const currentStep = processSteps[stepIndex]
 
+    setCurrentStepIndex(stepIndex)
+
     // 단계 상태 업데이트
     setProcessSteps((prevSteps) =>
       prevSteps.map((step, index) => {
@@ -664,7 +666,7 @@ export default function Component() {
 
                 {/* 크게보기 버튼 */}
                 <button
-                  onClick={handleCloseExpandedTextbox}
+                  onClick={() => {setShowExpandedTextbox(true)}}
                   className="absolute bottom-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                   title="크게보기"
                 >
@@ -1017,7 +1019,7 @@ export default function Component() {
         {!isSubmitted && (
           <div className="fixed bottom-4 md:bottom-6 left-4 md:left-6 z-50">
             <button
-              onClick={handleCloseRecentPosts}
+              onClick={() => {setIsRecentPostsOpen(true)}}
               className="w-12 md:w-10 h-12 md:h-10 text-gray-500 hover:text-gray-700 active:text-gray-800 transition-colors duration-200 flex items-center justify-center hover:scale-105 active:scale-95 bg-white md:bg-transparent rounded-full md:rounded-none shadow-lg md:shadow-none"
               title="최근 글 목록"
             >
