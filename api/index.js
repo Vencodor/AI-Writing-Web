@@ -35,6 +35,24 @@ const sendSseError = (res, message, error) => {
     res.end();
 };
 
+
+/**
+ * 모델이 반환한 텍스트에서 JSON만 깔끔하게 추출하는 헬퍼 함수.
+ * @param {string} rawText 모델의 응답 텍스트.
+ * @returns {object} 파싱된 JSON 객체.
+ */
+const parseJsonResponse = (rawText) => {
+  const match = rawText.match(/```json\n([\s\S]*?)\n```/);
+  const jsonString = match ? match[1] : rawText;
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    console.error("JSON 파싱 실패:", e);
+    console.error("원본 응답:", rawText);
+    throw new Error("Failed to parse JSON response from model.");
+  }
+};
+
 /**
  * 사용자의 한국어 초고를 입력받아, 2단계 AI 프로세스를 거쳐 개선된 최종본을 반환합니다.
  * 1단계: Gemini Flash 모델로 텍스트 전체를 분석하고 수정 대상을 진단합니다.
@@ -43,12 +61,12 @@ const sendSseError = (res, message, error) => {
  * @param {string} userText 사용자가 입력한 한국어 초고.
  * @returns {Promise<string>} AI가 수정한 최종 결과물 텍스트.
  */
-async function improveKoreanText(userText) {
+async function improveKoreanText(userText, res) {
   // --- 모델 정의 ---
   // 1단계 (빠른 분석용)
-  const analysisModel = "gemini-2.5-flash";
+  const analysisModel = "gemini-2.5-pro";
   // 2단계 (고품질 생성용)
-  const refinementModel = "gemini-2.5-pro";
+  const refinementModel = "gemini-2.5-flash";
 
   // --- 프롬프트 템플릿 정의 ---
   const stage1Prompt = `
@@ -112,23 +130,6 @@ async function improveKoreanText(userText) {
       
   `;
 
-  /**
-   * 모델이 반환한 텍스트에서 JSON만 깔끔하게 추출하는 헬퍼 함수.
-   * @param {string} rawText 모델의 응답 텍스트.
-   * @returns {object} 파싱된 JSON 객체.
-   */
-  const parseJsonResponse = (rawText) => {
-    const match = rawText.match(/```json\n([\s\S]*?)\n```/);
-    const jsonString = match ? match[1] : rawText;
-    try {
-      return JSON.parse(jsonString);
-    } catch (e) {
-      console.error("JSON 파싱 실패:", e);
-      console.error("원본 응답:", rawText);
-      throw new Error("Failed to parse JSON response from model.");
-    }
-  };
-
   // --- 1단계: 종합 분석 및 진단 ---
   console.log("1단계: 텍스트 분석 및 진단 시작...");
   let analysisData, diagnosticsList;
@@ -146,15 +147,17 @@ async function improveKoreanText(userText) {
       console.log("수정할 항목을 찾지 못했습니다. 원본 텍스트를 반환합니다.");
       return userText;
     }
-    console.log(`1단계 완료: ${diagnosticsList}`);
+    console.log(`1단계 완료: ${result.text}`);
   } catch (error) {
     console.error("1단계 API 호출 중 오류 발생:", error);
     throw new Error("Failed to analyze text or parse diagnostics.");
     return userText; // 오류 발생 시 원본 반환
   }
 
+  res.write(`data: ${JSON.stringify({ diagnostics: diagnosticsList })}\n\n`)
+  res.write(`data: ${JSON.stringify({ process: '1' })}\n\n`)
+
   // --- 2단계: 원칙 기반 자기 개선 생성 (병렬 처리) ---
-  console.log("2단계: 개선안 생성 시작 (병렬 처리)...");
   try {
     const refinementPromises = diagnosticsList.map(item => {
       const prompt = getStage2Prompt(analysisData, item);
@@ -170,14 +173,15 @@ async function improveKoreanText(userText) {
           };
         });
     });
+    res.write(`data: ${JSON.stringify({ process: '2' })}\n\n`)
 
     const refinementResults = await Promise.all(refinementPromises);
-    console.log("2단계 완료: 모든 개선안 생성 완료.");
 
     // --- 최종 결과물 조립 ---
     let finalText = userText;
     refinementResults.forEach(res => {
       // 원본 텍스트에서 수정 대상을 찾아 교체합니다.
+      console.log(`${res}`);
       finalText = finalText.replace(res.original, res.rewritten);
     });
 
@@ -212,8 +216,7 @@ app.post('/api/rewrite', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    res.write(`data: ${JSON.stringify({ process: '2' })}\n\n`);
-    improveKoreanText(input)
+    improveKoreanText(input, res)
       .then(finalText => {
         res.write(`data: ${JSON.stringify({ event: 'done' })}\n\n`);
         res.write(`data: ${JSON.stringify({ text: finalText })}\n\n`);
@@ -225,7 +228,7 @@ app.post('/api/rewrite', async (req, res) => {
   }
 });
 
-// AI 글쓰기 스트리밍을 위한 엔드포인트 (이건 이제 간단 초안작성 기능으로 변경하기)
+// AI 초안작성을 위한 스트리밍 사이트 (정보탐색, 적극적 글쓰기)
 app.post('/api/generate', async (req, res) => {
   // 사용자로부터 입력값 받기
   const input = req.body.inputText;

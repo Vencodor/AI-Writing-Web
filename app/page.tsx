@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
-import { Button as Star } from "@/components/ui/button"
+import TruckLoader from "./components/loadingTruck.jsx"
 import { PenTool, Sparkles, ArrowLeft, ChevronDown, ChevronUp, CheckCircle, Circle, Clock, Copy } from "lucide-react"
 
 import "./components.css"
@@ -50,14 +50,18 @@ export default function Component() {
   const [isRecentPostsOpen, setIsRecentPostsOpen] = useState(false)
   const [showMoreTypes, setShowMoreTypes] = useState(false)
   const [showUpdateLog, setShowUpdateLog] = useState(false)
+  const [showTextLengthError, setShowTextLengthError] = useState(false)
+  const [showExpandedTextbox, setShowExpandedTextbox] = useState(false)
+  const [isUpdateLogClosing, setIsUpdateLogClosing] = useState(false)
+  const [isExpandedTextboxClosing, setIsExpandedTextboxClosing] = useState(false)
 
   const svgStyle = {
-  shapeRendering: 'geometricPrecision',
-  textRendering: 'geometricPrecision',
-  imageRendering: 'optimizeQuality',
-  fillRule: 'evenodd',
-  clipRule: 'evenodd',
-  };
+    shapeRendering: "geometricPrecision",
+    textRendering: "geometricPrecision",
+    imageRendering: "optimizeQuality",
+    fillRule: "evenodd",
+    clipRule: "evenodd",
+  }
 
   // 계정 정보 더미 데이터
   const accountInfo = {
@@ -95,6 +99,16 @@ export default function Component() {
   // 업데이트 로그 더미 데이터
   const updateLogs = [
     {
+      version: "v1.0.7",
+      date: "2025.07.08",
+      title: "AI 피드백 및 UI 대폭 개선",
+      changes: [
+        "피드백 처리절차 수정",
+        "로딩바 추가",
+      ],
+      devNote: "더욱 직관적인 인터페이스와 새로운 기능을 준비중입니다.",
+    },
+    {
       version: "v1.0.6",
       date: "2025.07.08",
       title: "AI 추천 기능 및 UI 개선",
@@ -110,11 +124,7 @@ export default function Component() {
       version: "v1.0.5",
       date: "2025.07.07",
       title: "성능 최적화 및 버그 수정",
-      changes: [
-        "AI 응답 속도 향상",
-        "피드백 처리절차 개선",
-        "기타 버그 수정 및 UI 개선",
-      ],
+      changes: ["AI 응답 속도 향상", "피드백 처리절차 개선", "기타 버그 수정 및 UI 개선"],
       devNote: "더 빠르고 안정적인 서비스를 위해 백엔드 최적화를 진행했습니다.",
     },
     {
@@ -153,27 +163,15 @@ export default function Component() {
       status: "pending",
     },
     {
-      id: "plan",
-      title: "계획 수립",
-      description: "정교한 글 구조를 계획하고 있습니다",
+      id: "feedback",
+      title: "글 피드백",
+      description: "다양한 기준에 맞추어 글을 점검하고 있습니다",
       status: "pending",
     },
     {
-      id: "draft",
-      title: "자료 수집",
-      description: "필요한 자료를 수집하고 있습니다",
-      status: "pending",
-    },
-    {
-      id: "write",
-      title: "본문 작성",
-      description: "글의 본문을 작성하고 있습니다",
-      status: "pending",
-    },
-    {
-      id: "finalize",
-      title: "검토 및 피드백",
-      description: "글을 개선하고 있습니다",
+      id: "rewrite",
+      title: "글 재작성",
+      description: "모든 요청을 반영중입니다",
       status: "pending",
     },
   ]
@@ -205,7 +203,7 @@ export default function Component() {
 
   // 프로세스 시작 함수
 
-  const generateUrl = 'https://ai-writing-web.vercel.app/api/rewrite'
+  const generateUrl = "https://ai-writing-web.vercel.app/api/rewriteA"
   const startProcessing = async () => {
     // 초기화
     const initialSteps = createInitialSteps()
@@ -248,7 +246,7 @@ export default function Component() {
             const data = JSON.parse(jsonString)
 
             if (data.text) {
-              setGeneratedText(data.text) //차후 sources에 출처 데이터 집어넣기 + 실시간 카테고리추가, 주제 조언
+              setGeneratedText(data.text)
               completeAllSteps()
               return
             }
@@ -264,6 +262,10 @@ export default function Component() {
                 SetSources((prevSources) => [...prevSources, source])
               })
             }
+            if(data.diagnostics) {
+              const diagnostics = data.diagnostics
+              console.log(diagnostics)
+            }
           }
         }
       }
@@ -274,12 +276,19 @@ export default function Component() {
   }
 
   const handleSubmit = () => {
+    // 텍스트 길이 체크
+    if (inputText.trim().length < 50) {
+      setShowTextLengthError(true)
+      return
+    }
+
     setIsSettingsOpen(false)
     setIsSubmitted(true)
     setIsTextAnimating(false)
     setIsRecentPostsOpen(false)
     setDisplayedText("")
     setGeneratedText("")
+    setShowTextLengthError(false)
 
     // 프로세스 시작
     startProcessing()
@@ -489,6 +498,28 @@ export default function Component() {
     }
   }
 
+  const handleCloseRecentPosts = () => {
+    setTimeout(() => {
+      setIsRecentPostsOpen(false)
+    }, 300)
+  }
+
+  const handleCloseUpdateLog = () => {
+    setIsUpdateLogClosing(true)
+    setTimeout(() => {
+      setShowUpdateLog(false)
+      setIsUpdateLogClosing(false)
+    }, 200)
+  }
+
+  const handleCloseExpandedTextbox = () => {
+    setIsExpandedTextboxClosing(true)
+    setTimeout(() => {
+      setShowExpandedTextbox(false)
+      setIsExpandedTextboxClosing(false)
+    }, 200)
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div
@@ -498,7 +529,9 @@ export default function Component() {
       >
         {/* 최근 글 목록 패널 - 오버레이 방식 */}
         {isRecentPostsOpen && (
-          <div className="fixed top-0 left-0 w-full md:w-[280px] h-full bg-white border-r border-border flex flex-col animate-in slide-in-from-left-full md:slide-in-from-left-full slide-in-from-bottom-full fade-in-0 duration-300 z-50 shadow-lg">
+          <div
+            className={`fixed top-0 left-0 w-full md:w-[280px] h-full bg-white border-r border-border flex flex-col ${!isRecentPostsOpen ? "animate-out slide-out-to-left-full fade-out-0 duration-300" : "animate-in slide-in-from-left-full fade-in-0 duration-300"} z-50 shadow-lg`}
+          >
             {/* 계정 정보 - 고정 영역 */}
             <div className="border-b border-border flex-shrink-0 px-4 py-2.5"></div>
 
@@ -537,7 +570,7 @@ export default function Component() {
         {isRecentPostsOpen && (
           <div
             className="fixed inset-0 bg-black/15 z-40 animate-in fade-in-0 duration-300"
-            onClick={() => setIsRecentPostsOpen(false)}
+            onClick={handleCloseRecentPosts}
           />
         )}
 
@@ -576,14 +609,14 @@ export default function Component() {
                   <div className="flex items-center space-x-2">
                     <p className="text-xs md:text-sm text-muted-foreground">AI 글쓰기 도우미</p>
                     {!isSubmitted && (
-                    <button
-                      onClick={() => setShowUpdateLog(true)}
-                      className="flex items-center space-x-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200 group"
-                    >
-                      <span className="text-xs text-gray-600 font-medium">{updateLogs[0].version}</span>
-                      <span className="text-xs text-gray-500">새로운 기능</span>
-                      <ChevronDown className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                    </button>
+                      <button
+                        onClick={() => setShowUpdateLog(true)}
+                        className="flex items-center space-x-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200 group"
+                      >
+                        <span className="text-xs text-gray-600 font-medium">{updateLogs[0].version}</span>
+                        <span className="text-xs text-gray-500">새로운 기능</span>
+                        <ChevronDown className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -598,36 +631,56 @@ export default function Component() {
               >
                 글 주제를 입력하세요
               </Label>
-              <Textarea
-                id="content"
-                value={inputText}
-                onChange={handleInputChange}
-                onFocus={() => setIsTextareaFocused(true)}
-                onBlur={() => setIsTextareaFocused(false)}
-                ref={textRef}
-                placeholder={isSubmitted ? "여기에 글의 주제나 내용을 입력해주세요." : placeholderText}
-                className={`resize-none transition-all duration-400 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border-slate-300 focus:outline-none text-sm md:text-base border overflow-hidden ${
-                  isSubmitted
-                    ? "min-h-[120px] md:min-h-[140px]"
-                    : isTextareaFocused || inputText.trim()
-                      ? "md:min-h-[200px] w-full transform"
-                      : "min-h-[120px] w-full transform scale-100"
-                } ${inputText.length > 100 ? "min-h-[250px] md:min-h-[300px]" : ""} ${
-                  inputText.length > 300 ? "min-h-[350px] md:min-h-[400px]" : ""
-                } ${inputText.length > 500 ? "min-h-[450px] md:min-h-[500px]" : ""}`}
-              />
+              <div className="relative">
+                <Textarea
+                  id="content"
+                  value={inputText}
+                  onChange={handleInputChange}
+                  onFocus={() => {
+                    setIsTextareaFocused(true)
+                    setShowTextLengthError(false)
+                  }}
+                  onBlur={() => setIsTextareaFocused(false)}
+                  ref={textRef}
+                  placeholder={isSubmitted ? "여기에 글의 주제나 내용을 입력해주세요." : placeholderText}
+                  className={`resize-none transition-all duration-400 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border-slate-300 focus:outline-none text-sm md:text-base border overflow-hidden ${
+                    isSubmitted
+                      ? "min-h-[120px] md:min-h-[140px]"
+                      : isTextareaFocused || inputText.trim()
+                        ? "md:min-h-[200px] w-full transform"
+                        : "min-h-[120px] w-full transform scale-100"
+                  } ${inputText.length > 100 ? "min-h-[250px] md:min-h-[300px]" : ""} ${
+                    inputText.length > 300 ? "min-h-[350px] md:min-h-[400px]" : ""
+                  } ${inputText.length > 500 ? "min-h-[450px] md:min-h-[500px]" : ""}`}
+                />
+
+                {/* 크게보기 버튼 */}
+                <button
+                  onClick={handleCloseExpandedTextbox}
+                  className="absolute bottom-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  title="크게보기"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                    />
+                  </svg>
+                </button>
+              </div>
 
               {/* 글쓰기 유형 버튼들 */}
               <div
                 className={`pt-1 transition-all duration-300 ease-out ${isSubmitted ? "opacity-80" : "opacity-100"}`}
               >
                 <div className="flex flex-wrap gap-2 justify-start relative">
-                  
                   {/* AI추천 버튼 (그라데이션 효과) */}
-                  {isTextareaFocused || inputText.length>0 && (
+                  {inputText.length > 10 && (
                     <button
                       onClick={() => handleWritingTypeClick(writingTypes[0])}
-                      className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative  overflow-hidden ${
+                      className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative animate-in fade-in-0 overflow-hidden ${
                         activeWritingType === writingTypes[0].id
                           ? "bg-primary text-primary-foreground shadow-md"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
@@ -641,7 +694,7 @@ export default function Component() {
                   )}
 
                   {/* 일반 버튼들 (처음 3개) */}
-                  {writingTypes.slice(1, 4).map((type) => (
+                  {writingTypes.slice(1, 5).map((type) => (
                     <button
                       key={type.id}
                       onClick={() => handleWritingTypeClick(type)}
@@ -661,7 +714,7 @@ export default function Component() {
                       className="px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
                       onClick={() => setShowMoreTypes(!showMoreTypes)}
                     >
-                      더보기..
+                      더보기
                     </button>
 
                     {/* 툴팁 형태의 추가 버튼들 */}
@@ -731,7 +784,7 @@ export default function Component() {
                   }`}
                 >
                   <div className={`p-4 space-y-6 bg-white ${isSubmitted ? "p-3 space-y-4" : "p-4 space-y-6"}`}>
-                    {/* 글 전문성 수준 */}
+                    {/* 글 전문성 */}
                     <div className="space-y-3">
                       <Label
                         className={`font-medium transition-all duration-300 ease-out ${
@@ -825,7 +878,8 @@ export default function Component() {
                 className="w-full h-12 md:h-12 text-base transition-all duration-300 ease-out"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={!inputText.trim()} >
+                disabled={!inputText.trim()}
+              >
                 <Sparkles className="w-5 h-5 md:w-4 md:h-4 mr-2" />
                 AI로 글 다듬기
               </Button>
@@ -856,7 +910,7 @@ export default function Component() {
 
         {/* 오른쪽 결과 영역 */}
         {isSubmitted && (
-          <div className="flex items-start md:items-center justify-center bg-muted/20 transition-all ease-out p-3 md:p-4 lg:p-12 fade-in-0 duration-300 min-h-screen md:min-h-0">
+          <div className=" items-start justify-center bg-muted/20 transition-all ease-out p-3 md:p-4 lg:p-12 fade-in-0 duration-300 min-h-screen md:min-h-0 md:items-center lg:px-12">
             <div className="w-full max-w-full lg:max-w-4xl space-y-3 md:space-y-4 lg:space-y-6">
               <div className="flex items-center space-x-2 md:space-x-3 mb-4 md:mb-8">
                 <div className="w-6 md:w-8 h-6 md:h-8 bg-primary rounded-full flex items-center justify-center">
@@ -870,52 +924,34 @@ export default function Component() {
               <div className="bg-white rounded-lg border p-4 lg:p-8 shadow-sm">
                 {showProcessMap ? (
                   <div className="py-8">
-                    <div className="max-w-sm mx-auto space-y-3">
-                      {processSteps.map((step, index) => (
+                    <div className="max-w-md mx-auto space-y-6">
+                      
+                      <div className="flex justify-center items-center">
+                        <TruckLoader />
+                      </div>
+
+                      {/* 로딩 바 */}
+                      <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          key={step.id}
-                          className={`flex items-center space-x-3 py-2 px-3 rounded transition-all duration-300 ${
-                            step.status === "processing"
-                              ? "bg-gray-50"
-                              : step.status === "completed"
-                                ? "bg-gray-100"
-                                : "bg-white"
-                          }`}
-                        >
-                          <div className="flex-shrink-0">{getStepIcon(step)}</div>
-                          <div className="flex-1 min-w-0">
-                            <h3
-                              className={`font-medium text-sm ${
-                                step.status === "processing"
-                                  ? "text-gray-800"
-                                  : step.status === "completed"
-                                    ? "text-black"
-                                    : "text-gray-400"
-                              }`}
-                            >
-                              {step.title}
-                            </h3>
-                            <p
-                              className={`text-xs mt-0.5 ${
-                                step.status === "processing"
-                                  ? "text-gray-600"
-                                  : step.status === "completed"
-                                    ? "text-gray-600"
-                                    : "text-gray-300"
-                              }`}
-                            >
-                              {step.description}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                          className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
+                          style={{ width: `${((currentStepIndex + 1) / processSteps.length) * 100}%` }}
+                        ></div>
+                      </div>
+
+                      {/* 현재 단계 표시 */}
+                      <div className="text-center">
+                        <h3 className="font-medium text-gray-800 mb-2">{processSteps[currentStepIndex]?.title}</h3>
+                        <p className="text-sm text-gray-600">{processSteps[currentStepIndex]?.description}</p>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {currentStepIndex + 1} / {processSteps.length}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ) : (
                   <div className="prose max-w-none">
                     <div className="text-gray-800 leading-relaxed whitespace-pre-line">
                       {renderTextWithSources(displayedText)}
-                      {isTextAnimating && <span className="animate-pulse ml-1 text-gray-400">|</span>}
                     </div>
                   </div>
                 )}
@@ -973,7 +1009,7 @@ export default function Component() {
         {!isSubmitted && (
           <div className="fixed bottom-4 md:bottom-6 left-4 md:left-6 z-50">
             <button
-              onClick={() => setIsRecentPostsOpen(!isRecentPostsOpen)}
+              onClick={handleCloseRecentPosts}
               className="w-12 md:w-10 h-12 md:h-10 text-gray-500 hover:text-gray-700 active:text-gray-800 transition-colors duration-200 flex items-center justify-center hover:scale-105 active:scale-95 bg-white md:bg-transparent rounded-full md:rounded-none shadow-lg md:shadow-none"
               title="최근 글 목록"
             >
@@ -993,16 +1029,55 @@ export default function Component() {
         <div className="fixed bottom-4 md:bottom-6 right-4 md:right-6 z-50">
           <div className="relative">
             <button
-              onMouseEnter={() => setShowHelpTooltip(true)}
-              onMouseLeave={() => setShowHelpTooltip(false)}
-              onClick={() => setShowHelpTooltip(!showHelpTooltip)}
-              className="w-12 md:w-10 h-12 md:h-10 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95 text-base md:text-sm"
+              onMouseEnter={() => !showTextLengthError && setShowHelpTooltip(true)}
+              onMouseLeave={() => !showTextLengthError && setShowHelpTooltip(false)}
+              onClick={() => {
+                if(showTextLengthError) {setShowTextLengthError(false); setShowHelpTooltip(false)}
+                else {} //도움말 페이지로
+              }}
+              className={`w-12 md:w-10 h-12 md:h-10 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 active:scale-95 text-base md:text-sm ${
+                showTextLengthError ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"
+              }`}
             >
-              ?
+              {showTextLengthError ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                "?"
+              )}
             </button>
 
-            {/* 툴팁 */}
-            {showHelpTooltip && (
+            {/* 에러 툴팁 */}
+            {showTextLengthError && (
+              <div className="absolute bottom-full right-0 mb-2 w-80 bg-red-50 border border-red-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-red-900">입력 길이 부족</h3>
+                  <p className="text-xs text-red-700">
+                    초안의 길이는 최소 50자가 넘어야 합니다.
+                    <button
+                      className="text-red-600 underline font-medium ml-1"
+                      onClick={() => {
+                        setInputText(
+                          "한국의 주식 동향에 관한 리포트를 작성하세요. 최근 3개월간의 주요 지표와 트렌드를 포함하고, 투자자들에게 유용한 인사이트를 제공해주세요.",
+                        )
+                        setShowTextLengthError(false)
+                      }}
+                    >
+                      이곳
+                    </button>
+                    을 눌러 초안을 자동으로 생성해보세요
+                  </p>
+                </div>
+                {/* 툴팁 화살표 */}
+                <div className="absolute bottom-0 right-4 transform translate-y-full">
+                  <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-red-200"></div>
+                </div>
+              </div>
+            )}
+
+            {/* 기존 도움말 툴팁 */}
+            {showHelpTooltip && !showTextLengthError && (
               <div className="absolute bottom-full right-0 mb-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
                 <div className="space-y-3">
                   <h3 className="font-semibold text-sm text-gray-900">AI Writer 사용법</h3>
@@ -1036,7 +1111,9 @@ export default function Component() {
         {/* 업데이트 로그 팝업 */}
         {showUpdateLog && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 ">
-            <div className="bg-white rounded-lg shadow-xl max-w-xl w-full overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
+            <div
+              className={`bg-white rounded-lg shadow-xl max-w-xl w-full overflow-hidden ${isUpdateLogClosing ? "animate-out fade-out-0 zoom-out-95 duration-300" : "animate-in fade-in-0 zoom-in-95 duration-200"}`}
+            >
               {/* 헤더 */}
               <div className="flex overflow-hidden items-center justify-between p-6 border-b border-gray-200">
                 <div>
@@ -1044,7 +1121,7 @@ export default function Component() {
                   <p className="text-sm text-gray-500 mt-1">AI Writer의 최신 업데이트 내역을 확인하세요</p>
                 </div>
                 <button
-                  onClick={() => setShowUpdateLog(false)}
+                  onClick={handleCloseUpdateLog}
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
                 >
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1100,7 +1177,37 @@ export default function Component() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+        {/* 크게보기 텍스트박스 모달 */}
+        {showExpandedTextbox && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div
+              className={`bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] overflow-hidden ${isExpandedTextboxClosing ? "animate-out fade-out-0 zoom-out-95 duration-200" : "animate-in fade-in-0 zoom-in-95 duration-200"}`}
+            >
+              {/* 헤더 */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">글 작성</h2>
+                <button
+                  onClick={handleCloseExpandedTextbox}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
+              {/* 내용 */}
+              <div className="p-4 h-full">
+                <Textarea
+                  value={inputText}
+                  onChange={handleInputChange}
+                  placeholder="여기에 글의 주제나 내용을 입력해주세요..."
+                  className="w-full h-[calc(100%-60px)] resize-none p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base leading-relaxed"
+                />
+              </div>
             </div>
           </div>
         )}
