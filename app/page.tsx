@@ -141,6 +141,15 @@ export default function Component() {
     },
   ]
 
+  const exampleText = 
+`안녕하세요. 오늘은 수능 생윤 과목의 사상가 중 한명인 임마누엘 칸트의 사상에 대하여 알아볼것입니다.
+우선 칸트는 18세기 철학자입니다. 그는 엄격한 시간관리를 하는 사람으로 유명한데요, 그에 관련한 아주 유명한 일화를 하나 들자면 마을 사람들은 그가 정각에 산책을 나오지 않으면 시계를 의심하였다고 합니다.
+그러한 칸트의 사상으로는 '선의지'가 있습니다. 선의지란, 여타 모든것에 얽매이지 않고 오직 '도덕법칙에 대한 존경'만으로 그 행위를 해야한다는 개념인데요, 칸트는 이 선의지만이 무조건적으로 옳다고 주장하였습니다.
+그렇다면 어떤 것이 도덕법칙이 될 수 있을까요? 이것에 관해 칸트는 '네 행위의 준칙이 보편적 입법의 원리에 부합하도록 행위하여라' 라고 말하였습니다. 여기서 '보편적 입법의 원리에 부합'한다는 것은, 만일
+내 행위를 모든 사람들이 따라했을때에 문제가 생기지 않는다는것을 의미합니다
+이상입니다. 감사합니다.
+`
+
   const writingTypes = [
     { id: "ai-recommend", label: "AI추천", expertise: [2], length: [2], tone: [2] },
     { id: "academic", label: "학술", expertise: [4], length: [3], tone: [4] },
@@ -410,8 +419,7 @@ export default function Component() {
   }
 
   useEffect(() => {
-    const fullText =
-      "한국의 주식 동향에 관한 리포트를 작성하세요. 최근 3개월간의 주요 지표와 트렌드를 포함하고, 투자자들에게 유용한 인사이트를 제공해주세요."
+    const fullText = exampleText
     let currentIndex = 0
 
     const typeText = () => {
@@ -1059,7 +1067,7 @@ export default function Component() {
                       className="text-red-600 underline font-medium ml-1"
                       onClick={() => {
                         setInputText(
-                          "한국의 주식 동향에 관한 리포트를 작성하세요. 최근 3개월간의 주요 지표와 트렌드를 포함하고, 투자자들에게 유용한 인사이트를 제공해주세요.",
+                          exampleText,
                         )
                         setShowTextLengthError(false)
                       }}
