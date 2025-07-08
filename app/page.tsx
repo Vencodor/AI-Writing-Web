@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
+import { Button as Star } from "@/components/ui/button"
 import { PenTool, Sparkles, ArrowLeft, ChevronDown, ChevronUp, CheckCircle, Circle, Clock, Copy } from "lucide-react"
 
 import "./components.css"
@@ -49,6 +50,14 @@ export default function Component() {
   const [isRecentPostsOpen, setIsRecentPostsOpen] = useState(false)
   const [showMoreTypes, setShowMoreTypes] = useState(false)
   const [showUpdateLog, setShowUpdateLog] = useState(false)
+
+  const svgStyle = {
+  shapeRendering: 'geometricPrecision',
+  textRendering: 'geometricPrecision',
+  imageRendering: 'optimizeQuality',
+  fillRule: 'evenodd',
+  clipRule: 'evenodd',
+  };
 
   // 계정 정보 더미 데이터
   const accountInfo = {
@@ -196,7 +205,7 @@ export default function Component() {
 
   // 프로세스 시작 함수
 
-  const generateUrl = 'https://ai-writing-web.vercel.app/api/generate-text'
+  const generateUrl = 'https://ai-writing-web.vercel.app/api/rewrite'
   const startProcessing = async () => {
     // 초기화
     const initialSteps = createInitialSteps()
@@ -613,9 +622,9 @@ export default function Component() {
                 className={`pt-1 transition-all duration-300 ease-out ${isSubmitted ? "opacity-80" : "opacity-100"}`}
               >
                 <div className="flex flex-wrap gap-2 justify-start relative">
-
+                  
                   {/* AI추천 버튼 (그라데이션 효과) */}
-                  {isTextareaFocused && (
+                  {isTextareaFocused || inputText.length>0 && (
                     <button
                       onClick={() => handleWritingTypeClick(writingTypes[0])}
                       className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative  overflow-hidden ${
@@ -785,7 +794,7 @@ export default function Component() {
                           isSubmitted ? "text-sm" : "text-base"
                         }`}
                       >
-                        글 톤
+                        톤 앤 매너
                       </Label>
                       <Slider
                         value={textTone}
@@ -816,8 +825,7 @@ export default function Component() {
                 className="w-full h-12 md:h-12 text-base transition-all duration-300 ease-out"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={!inputText.trim()}
-              >
+                disabled={!inputText.trim()} >
                 <Sparkles className="w-5 h-5 md:w-4 md:h-4 mr-2" />
                 AI로 글 다듬기
               </Button>
