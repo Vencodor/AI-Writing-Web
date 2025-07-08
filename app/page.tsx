@@ -203,7 +203,7 @@ export default function Component() {
 
   // 프로세스 시작 함수
 
-  const generateUrl = "https://ai-writing-web.vercel.app/api/rewriteA"
+  const generateUrl = "https://ai-writing-web.vercel.app/api/rewrite"
   const startProcessing = async () => {
     // 초기화
     const initialSteps = createInitialSteps()
