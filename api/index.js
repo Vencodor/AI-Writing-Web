@@ -45,7 +45,7 @@ const parseJsonResponse = (rawText) => {
   const match = rawText.match(/```json\n([\s\S]*?)\n```/);
   const jsonString = match ? match[1] : rawText;
   try {
-    return JSON.parse(jsonString);
+    return JSON.parse(jsonString.replaceAll("```",""));
   } catch (e) {
     console.error("JSON 파싱 실패:", e);
     console.error("원본 응답:", rawText);

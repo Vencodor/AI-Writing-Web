@@ -308,7 +308,7 @@ export default function Component() {
 
         const chunk = decoder.decode(value)
 
-        const lines = chunk.split("\n\n").filter((line) => line.trim() !== "")
+        const lines = chunk.split("\n\n").filter((line) => line !== "")
         for (const line of lines) {
           if (line.startsWith("data:")) {
             const jsonString = line.replace("data: ", "")
@@ -340,7 +340,7 @@ export default function Component() {
 
   const handleSubmit = () => {
     if(isGenerating) return
-    if (inputText.trim().length < 50) {
+    if (inputText.length < 50) {
       setShowError(`초안 길이 부족|초안의 길이는 최소 50자가 넘어야 합니다.
                     <button
                       className="text-red-600 underline font-medium ml-1"
@@ -372,7 +372,7 @@ export default function Component() {
       setShowError("오류|이미 초안이 생성중입니다")
       return
     }
-    if(inputText.trim().length < 10) {
+    if(inputText.length < 10) {
       setShowError("초안 길이 부족|초안을 생성하려면 주제, 목적 등을 포함해 최소 10자가 넘어야 합니다")
       return
     }
@@ -748,7 +748,7 @@ export default function Component() {
                   className={`resize-none transition-all duration-400 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border-slate-300 focus:outline-none text-sm md:text-base border ${
                     isSubmitted
                       ? "min-h-[120px] md:min-h-[140px]"
-                      : isTextareaFocused || inputText.trim()
+                      : isTextareaFocused || inputText
                         ? "md:min-h-[200px] w-full transform"
                         : "min-h-[120px] w-full transform scale-100"
                   } ${inputText.length > 100 ? "min-h-[250px] md:min-h-[300px]" : ""} ${
@@ -977,7 +977,7 @@ export default function Component() {
                 className="w-full h-12 md:h-12 text-base transition-all duration-300 ease-out"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={!inputText.trim()}
+                disabled={!inputText}
               >
                 <Sparkles className="w-5 h-5 md:w-4 md:h-4 mr-2" />
                 AI로 글 다듬기
@@ -989,7 +989,7 @@ export default function Component() {
                     !isGenerating && isTextModified ? "animate-in fade-in-0 slide-in-from-top-2" : ""
                   }`}
                   onClick={handleSubmit}
-                  disabled={isGenerating || !inputText.trim()}
+                  disabled={isGenerating || !inputText}
                 >
                   <Sparkles className="w-5 h-5 md:w-4 md:h-4 mr-2" />
                   {isGenerating ? "생성 중.." : isTextModified ? "글 피드백" : "글 재생성"}
