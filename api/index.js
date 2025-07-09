@@ -265,16 +265,15 @@ app.post('/api/draft', async (req, res) => {
   Crucial instructions:
    1. No Markdown: You must not use any Markdown formatting (like ##, *, or **). The entire article must be
       plain text.
-   2. Paragraphs: Use double line breaks to separate paragraphs.
+   2. Paragraphs: Use \\n to separate paragraphs.
    3. JSON Output: The final output must be a single, valid JSON object containing only one key: "draft". Do
       not include any other text or explanations before or after the JSON object.
 
   The JSON object must conform to the following schema:
 
-
    {
      "draft": "The full, plain-text content of the article goes here. Paragraphs are separated by
-     double line breaks."
+     \\n."
    }
     `
                          
