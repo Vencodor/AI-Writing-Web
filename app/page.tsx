@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 import TruckLoader from "./components/loadingTruck.jsx"
 import { PenTool, Sparkles, ArrowLeft, ChevronDown, ChevronUp, CheckCircle, Circle, Clock, Copy } from "lucide-react"
 
@@ -50,8 +51,9 @@ export default function Component() {
   const [isRecentPostsOpen, setIsRecentPostsOpen] = useState(false)
   const [showMoreTypes, setShowMoreTypes] = useState(false)
   const [showUpdateLog, setShowUpdateLog] = useState(false)
-  const [showTextLengthError, setShowTextLengthError] = useState(false)
+  const [showError, setShowError] = useState("")
   const [showExpandedTextbox, setShowExpandedTextbox] = useState(false)
+  const [isDraftTextGenerating, setIsDraftTextGenerating] = useState(false)
   const [isUpdateLogClosing, setIsUpdateLogClosing] = useState(false)
   const [isExpandedTextboxClosing, setIsExpandedTextboxClosing] = useState(false)
 
@@ -155,7 +157,6 @@ export default function Component() {
 `
 
   const writingTypes = [
-    { id: "ai-recommend", label: "AI추천", expertise: [2], length: [2], tone: [2] },
     { id: "academic", label: "학술", expertise: [4], length: [3], tone: [4] },
     { id: "review", label: "리뷰", expertise: [2], length: [3], tone: [0] },
     { id: "daily", label: "일상", expertise: [1], length: [2], tone: [0] },
@@ -183,7 +184,7 @@ export default function Component() {
     },
     {
       id: "rewrite",
-      title: "글 재작성",
+      title: "글 피드백",
       description: "모든 요청을 반영중입니다",
       status: "pending",
     },
@@ -208,13 +209,6 @@ export default function Component() {
         }
       }),
     )
-  }
-
-  // 프로세스 완료 함수
-  const completeAllSteps = () => {
-    setProcessSteps((prevSteps) => prevSteps.map((step) => ({ ...step, status: "completed" as const })))
-    setShowProcessMap(false)
-    setIsGenerating(false)
   }
 
   // 프로세스 시작 함수
@@ -266,25 +260,19 @@ export default function Component() {
 
             if (data.text) {
               setGeneratedText(data.text)
-              completeAllSteps()
+              
+              setProcessSteps((prevSteps) => prevSteps.map((step) => ({ ...step, status: "completed" as const })))
+              setShowProcessMap(false)
+              setIsGenerating(false)
               return
             }
             if (data.process) {
               updateProcessStep(Number(data.process))
             }
-            if (data.source) {
-              data.source.forEach((s: { web: any }) => {
-                const source: Source = {
-                  title: s.web.title || "알 수 없음",
-                  url: s.web.uri,
-                }
-                SetSources((prevSources) => [...prevSources, source])
-              })
-            }
             if (data.diagnostics) {
               const diagnostics = data.diagnostics
               diagnostics.forEach((dia: any) => {
-                const diagnosticString = `원본:${dia.original_text_segment} 문제:${dia.issue_type}`
+                const diagnosticString = `${dia.original_text_segment} \n${dia.issue_type}`
                 setMockFeedbacks((prev)=> [...prev, diagnosticString])
               })
               setShowMockFeedback(true)
@@ -298,10 +286,72 @@ export default function Component() {
     }
   }
 
+  const generateDraftUrl = "https://ai-writing-web.vercel.app/api/draft"
+  const startDraftProcessing = async () => {
+
+    try {
+      const response = await fetch(generateDraftUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputText, expertiseLevel, textLength, textTone }),
+      })
+      if (!response.body) return
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+
+        const lines = chunk.split("\n\n").filter((line) => line.trim() !== "")
+        for (const line of lines) {
+          if (line.startsWith("data:")) {
+            const jsonString = line.replace("data: ", "")
+            const data = JSON.parse(jsonString)
+
+            if (data.text) {
+              setInputText(data.text)
+              setIsDraftTextGenerating(false)
+              return
+            }
+            if (data.source) {
+              data.source.forEach((s: { web: any }) => {
+                const source: Source = {
+                  title: s.web.title || "알 수 없음",
+                  url: s.web.uri,
+                }
+                SetSources((prevSources) => [...prevSources, source])
+              })
+            }
+
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching AI stream:", error)
+    } finally {
+    }
+  }
+
   const handleSubmit = () => {
-    // 텍스트 길이 체크
+    if(isGenerating) return
     if (inputText.trim().length < 50) {
-      setShowTextLengthError(true)
+      setShowError(`초안 길이 부족|초안의 길이는 최소 50자가 넘어야 합니다.
+                    <button
+                      className="text-red-600 underline font-medium ml-1"
+                      onClick={() => {
+                        setInputText(exampleText)
+                        setShowError("")
+                      }}
+                    >
+                      이곳
+                    </button>
+                    을 눌러 초안을 자동으로 생성해보세요`)
       return
     }
 
@@ -311,10 +361,26 @@ export default function Component() {
     setIsRecentPostsOpen(false)
     setDisplayedText("")
     setGeneratedText("")
-    setShowTextLengthError(false)
+    setShowError("")
 
     // 프로세스 시작
     startProcessing()
+  }
+
+  const handleDraftTextClick = () => {
+    if(isDraftTextGenerating) {
+      setShowError("오류|이미 초안이 생성중입니다")
+      return
+    }
+    if(inputText.trim().length < 10) {
+      setShowError("초안 길이 부족|초안을 생성하려면 주제, 목적 등을 포함해 최소 10자가 넘어야 합니다")
+      return
+    }
+
+    setIsDraftTextGenerating(true)
+    setShowError("")
+
+    startDraftProcessing()
   }
 
   // 결과 출력 애니메이션
@@ -674,7 +740,7 @@ export default function Component() {
                   onChange={handleInputChange}
                   onFocus={() => {
                     setIsTextareaFocused(true)
-                    setShowTextLengthError(false)
+                    setShowError("")
                   }}
                   onBlur={() => setIsTextareaFocused(false)}
                   ref={textRef}
@@ -715,19 +781,14 @@ export default function Component() {
               >
                 <div className="flex flex-wrap gap-2 justify-start relative">
                   {/* AI추천 버튼 (그라데이션 효과) */}
-                  {inputText.length > 10 && (
+                  {(
                     <button
-                      onClick={() => handleWritingTypeClick(writingTypes[0])}
-                      className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative animate-in fade-in-0 overflow-hidden ${
-                        activeWritingType === writingTypes[0].id
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
-                      }`}
+                      onClick={() => handleDraftTextClick()}
+                      className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative animate-in fade-in-0 overflow-hidden 
+                        "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"}`}
                     >
-                      <span className="relative z-10">{writingTypes[0].label}</span>
-                      {activeWritingType !== writingTypes[0].id && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-purple-300 via-indigo-500 to-sky-200 opacity-20"></div>
-                      )}
+                      <span className="relative z-10">AI 초안 작성</span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-300 via-indigo-500 to-sky-200 opacity-20"></div>
                     </button>
                   )}
 
@@ -1074,45 +1135,35 @@ export default function Component() {
         <div className="fixed bottom-4 md:bottom-6 right-4 md:right-6 z-50">
           <div className="relative">
             <button
-              onMouseEnter={() => !showTextLengthError && setShowHelpTooltip(true)}
-              onMouseLeave={() => !showTextLengthError && setShowHelpTooltip(false)}
+              onMouseEnter={() => showError.length==0 && setShowHelpTooltip(true)}
+              onMouseLeave={() => showError.length==0 && setShowHelpTooltip(false)}
               onClick={() => {
-                if (showTextLengthError) {
-                  setShowTextLengthError(false)
+                if (showError.length>0) {
+                  setShowError("")
                   setShowHelpTooltip(false)
                 } else {
                 } //도움말 페이지로
               }}
               className={`w-12 md:w-10 h-12 md:h-10 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 active:scale-95 text-base md:text-sm ${
-                showTextLengthError ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"
+                showError.length>0 ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"
               }`}
             >
-              {showTextLengthError ? (
+              {showError.length==0 ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                "@"
+                "?"
               )}
             </button>
 
             {/* 에러 툴팁 */}
-            {showTextLengthError && (
+            {showError.length>0 && (
               <div className="absolute bottom-full right-0 mb-2 w-80 bg-red-50 border border-red-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-red-900">입력 길이 부족</h3>
+                  <h3 className="font-semibold text-sm text-red-900">{showError.split("|")[0]}</h3>
                   <p className="text-xs text-red-700">
-                    초안의 길이는 최소 50자가 넘어야 합니다.
-                    <button
-                      className="text-red-600 underline font-medium ml-1"
-                      onClick={() => {
-                        setInputText(exampleText)
-                        setShowTextLengthError(false)
-                      }}
-                    >
-                      이곳
-                    </button>
-                    을 눌러 초안을 자동으로 생성해보세요
+                    {showError.split("|")[1]}
                   </p>
                 </div>
                 {/* 툴팁 화살표 */}
@@ -1123,7 +1174,7 @@ export default function Component() {
             )}
 
             {/* 기존 도움말 툴팁 */}
-            {showHelpTooltip && !showTextLengthError && (
+            {showHelpTooltip && showError.length==0 && (
               <div className="absolute bottom-full right-0 mb-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
                 <div className="space-y-3">
                   <h3 className="font-semibold text-sm text-gray-900">AI Writer 사용법</h3>
