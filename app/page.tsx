@@ -315,7 +315,7 @@ export default function Component() {
             const data = JSON.parse(jsonString)
 
             if (data.text) {
-              setInputText(data.text)
+              setInputText(data.text.draft)
               setIsDraftTextGenerating(false)
               return
             }
