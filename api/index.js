@@ -155,7 +155,7 @@ async function improveKoreanText(userText, res) {
   }
 
   res.write(`data: ${JSON.stringify({ diagnostics: diagnosticsList })}\n\n`)
-  res.write(`data: ${JSON.stringify({ process: '2' })}\n\n`)
+  res.write(`data: ${JSON.stringify({ process: '1' })}\n\n`)
 
   // --- 2단계: 원칙 기반 자기 개선 생성 (병렬 처리) ---
   try {
@@ -173,7 +173,7 @@ async function improveKoreanText(userText, res) {
           };
         });
     });
-    res.write(`data: ${JSON.stringify({ process: '3' })}\n\n`)
+    res.write(`data: ${JSON.stringify({ process: '2' })}\n\n`)
 
     const refinementResults = await Promise.all(refinementPromises);
 

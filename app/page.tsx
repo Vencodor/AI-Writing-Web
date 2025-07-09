@@ -55,6 +55,10 @@ export default function Component() {
   const [isUpdateLogClosing, setIsUpdateLogClosing] = useState(false)
   const [isExpandedTextboxClosing, setIsExpandedTextboxClosing] = useState(false)
 
+  const [mockFeedbacks, setMockFeedbacks] = useState<string[]>([])
+  const [currentMockIndex, setCurrentMockIndex] = useState(0)
+  const [showMockFeedback, setShowMockFeedback] = useState(false)
+
   const svgStyle = {
     shapeRendering: "geometricPrecision",
     textRendering: "geometricPrecision",
@@ -102,10 +106,7 @@ export default function Component() {
       version: "v1.0.7",
       date: "2025.07.08",
       title: "AI 피드백 및 UI 대폭 개선",
-      changes: [
-        "피드백 처리절차 수정",
-        "로딩바 추가",
-      ],
+      changes: ["피드백 처리절차 수정", "로딩바 추가"],
       devNote: "글쓰기 피드백 기능을 강화하였습니다",
     },
     {
@@ -193,6 +194,7 @@ export default function Component() {
     const currentStep = processSteps[stepIndex]
 
     setCurrentStepIndex(stepIndex)
+    console.log(stepIndex)
 
     // 단계 상태 업데이트
     setProcessSteps((prevSteps) =>
@@ -226,6 +228,9 @@ export default function Component() {
     setShowProcessMap(true)
     setIsGenerating(true)
     setOriginalInputText(inputText)
+    setMockFeedbacks([]) // mock 피드백 초기화
+    setCurrentMockIndex(0)
+    setShowMockFeedback(false)
 
     updateProcessStep(0)
 
@@ -276,9 +281,13 @@ export default function Component() {
                 SetSources((prevSources) => [...prevSources, source])
               })
             }
-            if(data.diagnostics) {
+            if (data.diagnostics) {
               const diagnostics = data.diagnostics
-              console.log(diagnostics)
+              diagnostics.forEach((dia: any) => {
+                const diagnosticString = `원본:${dia.original_text_segment} 문제:${dia.issue_type}`
+                setMockFeedbacks((prev)=> [...prev, diagnosticString])
+              })
+              setShowMockFeedback(true)
             }
           }
         }
@@ -527,6 +536,24 @@ export default function Component() {
     }, 200)
   }
 
+  // Mock 피드백 애니메이션 효과
+  useEffect(() => {
+    if (showMockFeedback && mockFeedbacks.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentMockIndex((prevIndex) => {
+          if (prevIndex < mockFeedbacks.length - 1) {
+            return prevIndex + 1
+          } else {
+            // 모든 mock이 끝나면 다시 처음부터 반복
+            return 0
+          }
+        })
+      }, 2000) // 2초마다 변경
+
+      return () => clearInterval(interval)
+    }
+  }, [showMockFeedback, mockFeedbacks.length])
+
   return (
     <div className="min-h-screen bg-background">
       <div
@@ -577,7 +604,9 @@ export default function Component() {
         {isRecentPostsOpen && (
           <div
             className="fixed inset-0 bg-black/15 z-40 animate-in fade-in-0 duration-300"
-            onClick={() => {setIsRecentPostsOpen(false)}}
+            onClick={() => {
+              setIsRecentPostsOpen(false)
+            }}
           />
         )}
 
@@ -663,7 +692,9 @@ export default function Component() {
 
                 {/* 크게보기 버튼 */}
                 <button
-                  onClick={() => {setShowExpandedTextbox(true)}}
+                  onClick={() => {
+                    setShowExpandedTextbox(true)
+                  }}
                   className="absolute bottom-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                   title="크게보기"
                 >
@@ -932,26 +963,31 @@ export default function Component() {
                 {showProcessMap ? (
                   <div className="py-8">
                     <div className="max-w-md mx-auto space-y-6">
-                      
                       <div className="flex justify-center items-center">
                         <TruckLoader />
                       </div>
 
-                      {/* 로딩 바 */}
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
-                          style={{ width: `${((currentStepIndex + 1) / processSteps.length) * 100}%` }}
-                        ></div>
-                      </div>
-
-                      {/* 현재 단계 표시 */}
-                      <div className="text-center">
+                      {/* Mock 피드백 또는 현재 단계 표시 */}
+                      <div className="text-center min-h-[80px] flex flex-col justify-center">
                         <h3 className="font-medium text-gray-800 mb-2">{processSteps[currentStepIndex]?.title}</h3>
-                        <p className="text-sm text-gray-600">{processSteps[currentStepIndex]?.description}</p>
+                        {(showMockFeedback && mockFeedbacks.length > 1) ? (
+                          // Mock 피드백 애니메이션
+                          <div className="relative overflow-hidden">
+                            <div
+                              key={currentMockIndex}
+                              className="animate-in slide-in-from-bottom-4 fade-in-0 duration-500">
+                              <p className="text-sm text-gray-600 leading-relaxed px-4">
+                                {mockFeedbacks[currentMockIndex]}
+                              </p>
+                            </div>
+                          </div>) : 
+                          (
+                            <p className="text-sm text-gray-600">{processSteps[currentStepIndex]?.description}</p>
+                          )}
                         <p className="text-xs text-gray-400 mt-2">
-                          {currentStepIndex + 1} / {processSteps.length}
+                            {currentStepIndex} / {processSteps.length}
                         </p>
+                        
                       </div>
                     </div>
                   </div>
@@ -1016,7 +1052,9 @@ export default function Component() {
         {!isSubmitted && (
           <div className="fixed bottom-4 md:bottom-6 left-4 md:left-6 z-50">
             <button
-              onClick={() => {setIsRecentPostsOpen(true)}}
+              onClick={() => {
+                setIsRecentPostsOpen(true)
+              }}
               className="w-12 md:w-10 h-12 md:h-10 text-gray-500 hover:text-gray-700 active:text-gray-800 transition-colors duration-200 flex items-center justify-center hover:scale-105 active:scale-95 bg-white md:bg-transparent rounded-full md:rounded-none shadow-lg md:shadow-none"
               title="최근 글 목록"
             >
@@ -1039,8 +1077,11 @@ export default function Component() {
               onMouseEnter={() => !showTextLengthError && setShowHelpTooltip(true)}
               onMouseLeave={() => !showTextLengthError && setShowHelpTooltip(false)}
               onClick={() => {
-                if(showTextLengthError) {setShowTextLengthError(false); setShowHelpTooltip(false)}
-                else {} //도움말 페이지로
+                if (showTextLengthError) {
+                  setShowTextLengthError(false)
+                  setShowHelpTooltip(false)
+                } else {
+                } //도움말 페이지로
               }}
               className={`w-12 md:w-10 h-12 md:h-10 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 active:scale-95 text-base md:text-sm ${
                 showTextLengthError ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"
@@ -1065,9 +1106,7 @@ export default function Component() {
                     <button
                       className="text-red-600 underline font-medium ml-1"
                       onClick={() => {
-                        setInputText(
-                          exampleText,
-                        )
+                        setInputText(exampleText)
                         setShowTextLengthError(false)
                       }}
                     >
