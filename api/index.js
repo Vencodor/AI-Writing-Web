@@ -286,9 +286,9 @@ app.post('/api/draft', async (req, res) => {
 
     const parsedResponse = parseJsonResponse(response.text);
 
-    const chunks = detailResponse.candidates[0]?.groundingMetadata?.groundingChunks;
+    const chunks = response.candidates[0]?.groundingMetadata?.groundingChunks;
     if (chunks && chunks.length > 0) {
-      res.write(`data: ${JSON.stringify({ source: chunks })}\n\n`); //이거 메인화면 연동해놓기
+      //res.write(`data: ${JSON.stringify({ source: chunks })}\n\n`); //이거 메인화면 연동해놓기
     }
 
     // 6. 최종 결과물 전송 및 스트림 종료

@@ -1148,7 +1148,7 @@ export default function Component() {
                 showError.length>0 ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"
               }`}
             >
-              {showError.length==0 ? (
+              {showError.length>0 ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
