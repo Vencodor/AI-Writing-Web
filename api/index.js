@@ -187,7 +187,7 @@ async function improveKoreanText(userText, res) {
   let analysisData, diagnosticsList;
   try {
     const result = await ai.models.generateContent({ model: analysisModel, contents: stage1Prompt });
-    const parsedResponse = parseJsonResponse(result.response.text());
+    const parsedResponse = parseJsonResponse(result.text);
     
     if (!parsedResponse || !parsedResponse.diagnostics) {
         throw new Error("1단계 분석 결과 파싱 실패");
@@ -219,7 +219,7 @@ async function improveKoreanText(userText, res) {
       
       return ai.models.generateContent({ model: refinementModel, contents: prompt })
         .then(result => {
-          const parsed = parseJsonResponse(result.response.text());
+          const parsed = parseJsonResponse(result.text);
           if (!parsed || !parsed.final_rewritten_text) {
              console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
              // 파싱 실패 시 원본을 그대로 사용하도록 객체 반환
