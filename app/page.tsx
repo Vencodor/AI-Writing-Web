@@ -829,9 +829,27 @@ const writingTypes = [
                   </button>
 
                   <div>|</div>
+                  
+                  {/* 일반 버튼들 */}
 
-                  {/* 일반 버튼들 (처음 3개) */}
-                  {writingTypes.slice(1, 5).map((type) => (
+                  {activeWritingType.length>0 && (
+                    <button
+                      key={activeWritingType}
+                      onClick={() => {
+                        const type = writingTypes.find((t) => t.id === activeWritingType)
+                        if (type) handleWritingTypeClick(type)
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto ${
+                        activeWritingType === activeWritingType
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                      }`}
+                    >
+                      {activeWritingType}
+                    </button>
+                  )}
+
+                  {writingTypes.slice(1, 4).map((type) => (
                     <button
                       key={type.id}
                       onClick={() => handleWritingTypeClick(type)}

@@ -198,6 +198,7 @@ app.post('/api/rewrite', async (req, res) => {
 app.post('/api/draft', async (req, res) => {
   // 사용자로부터 입력값 받기
   const input = req.body.inputText;
+  const req = req.body.activeWritingType
   const expertiseLevel = req.body.expertiseLevel / 1 + 1;
   const textLength = req.body.textLength / 1 + 1;
   const textTone = req.body.textTone / 1 + 1;
@@ -331,25 +332,25 @@ app.post('/api/draft', async (req, res) => {
 function createDraftPrompt(raw_text, format, expertise_level, length, tone) {
   // 1. 숫자 입력을 텍스트 지침으로 변환 (매핑은 이전과 동일)
   const expertiseMap = {
-    0: "Childlike simplicity (아주 쉬운 단어, 짧은 문장)",
-    1: "Beginner level (전문용어 사용 금지 또는 즉시 설명)",
-    2: "General audience (기본 지식 가정, 기술적 세부사항 회피)",
-    3: "Informed audience (업계 용어 적절히 사용)",
-    4: "Expert level (정확하고 기술적인 언어, 심층 분석)",
+    1: "Childlike simplicity (아주 쉬운 단어, 짧은 문장)",
+    2: "Beginner level (전문용어 사용 금지 또는 즉시 설명)",
+    3: "General audience (기본 지식 가정, 기술적 세부사항 회피)",
+    4: "Informed audience (업계 용어 적절히 사용)",
+    5: "Expert level (정확하고 기술적인 언어, 심층 분석)",
   };
   const lengthMap = {
-    0: "Very short (1-2 paragraphs, ~100 words)",
-    1: "Short (2-3 paragraphs, ~200 words)",
-    2: "Medium (4-6 paragraphs, ~500 words)",
-    3: "Long (7-10 paragraphs, ~800 words)",
-    4: "Very long (10+ paragraphs, 1200+ words)",
+    1: "Very short (1-2 paragraphs, ~100 words)",
+    2: "Short (2-3 paragraphs, ~200 words)",
+    3: "Medium (4-6 paragraphs, ~500 words)",
+    4: "Long (7-10 paragraphs, ~800 words)",
+    5: "Very long (10+ paragraphs, 1200+ words)",
   };
   const toneMap = {
-    0: "Emotional & Sincere",
-    1: "Witty & Humorous",
-    2: "Friendly & Casual (-해요 체)",
-    3: "Professional & Persuasive (-습니다 체)",
-    4: "Objective & Informative (-다 체)",
+    1: "Emotional & Sincere",
+    2: "Witty & Humorous",
+    3: "Friendly & Casual (-해요 체)",
+    4: "Professional & Persuasive (-습니다 체)",
+    5: "Objective & Informative (-다 체)",
   };
 
   // 2. 변환된 텍스트를 포함하여 최종 프롬프트 생성
