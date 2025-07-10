@@ -99,7 +99,7 @@ function getContextualSnippets(fullText, startIndex, endIndex, contextLength = 1
  */
 async function improveKoreanText(userText, res) {
   // --- 모델 정의 ---
-  const analysisModel = "gemini-2.5-pro"; // 인덱스 추출 등 더 복잡한 작업을 위해 최신 Flash 모델 권장
+  const analysisModel = "gemini-2.5-flash"; // 인덱스 추출 등 더 복잡한 작업을 위해 최신 Flash 모델 권장
   const refinementModel = "gemini-2.5-pro";
 
   // --- 개선점 1: 더 정교해진 1단계 프롬프트 ---
@@ -202,7 +202,7 @@ async function improveKoreanText(userText, res) {
       res.write(`data: ${JSON.stringify({ event: 'no_changes' })}\n\n`);
       return userText;
     }
-    console.log(`1단계 완료: ${diagnosticsList.length}개의 수정 항목 발견.`);
+    console.log(`1단계 완료: ${diagnosticsList.length}개의 수정 항목 발견.`,result.text);
     res.write(`data: ${JSON.stringify({ diagnostics: diagnosticsList })}\n\n`);
 
   } catch (error) {
@@ -245,7 +245,7 @@ async function improveKoreanText(userText, res) {
         finalText.substring(refine.end_index);
     });
     
-    console.log("2단계 완료: 최종 텍스트 조립 완료.");
+    console.log("2단계 완료: 최종 텍스트 조립 완료.",refinementResults);
     return finalText;
 
   } catch (error) {
