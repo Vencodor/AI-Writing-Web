@@ -286,7 +286,7 @@ const writingTypes = [
             if (data.diagnostics) {
               const diagnostics = data.diagnostics
               diagnostics.forEach((dia: any) => {
-                const diagnosticString = `${dia.original_text_segment} \n${dia.issue_type}`
+                const diagnosticString = `${dia.original_text_segment} / ${dia.issue_type}`
                 setMockFeedbacks((prev)=> [...prev, diagnosticString])
               })
               setShowMockFeedback(true)
@@ -1031,7 +1031,7 @@ const writingTypes = [
                 className="w-full h-12 md:h-12 text-base transition-all duration-300 ease-out"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={!inputText}
+                disabled={!inputText || isDraftTextGenerating}
               >
                 <Sparkles className="w-5 h-5 md:w-4 md:h-4 mr-2" />
                 AI로 글 다듬기

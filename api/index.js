@@ -369,6 +369,7 @@ function createDraftPrompt(raw_text, format, expertise_level, length, tone) {
 
           ### Final Output (Strict JSON format)
           You MUST output a single, valid JSON object and nothing else. No introductory text.
+          Dont include source.
           The JSON object must contain ONLY ONE KEY: "draft".
           Use \\n for paragraph breaks.
 
