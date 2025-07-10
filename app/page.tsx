@@ -1114,7 +1114,7 @@ export default function Component() {
           <div className="fixed bottom-4 md:bottom-6 left-4 md:left-6 z-50">
             <button
               onClick={() => {
-                setIsRecentPostsOpen(true)
+                setIsRecentPostsOpen(!isRecentPostsOpen)
               }}
               className="w-12 md:w-10 h-12 md:h-10 text-gray-500 hover:text-gray-700 active:text-gray-800 transition-colors duration-200 flex items-center justify-center hover:scale-105 active:scale-95 bg-white md:bg-transparent rounded-full md:rounded-none shadow-lg md:shadow-none"
               title="최근 글 목록"

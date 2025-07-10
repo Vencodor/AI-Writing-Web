@@ -66,7 +66,7 @@ async function improveKoreanText(userText, res) {
   // 1단계 (빠른 분석용)
   const analysisModel = "gemini-2.5-flash";
   // 2단계 (고품질 생성용)
-  const refinementModel = "gemini-2.5-flash";
+  const refinementModel = "gemini-2.5-pro";
 
   // --- 프롬프트 템플릿 정의 ---
   const stage1Prompt = `
