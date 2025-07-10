@@ -832,22 +832,20 @@ const writingTypes = [
                   
                   {/* 일반 버튼들 */}
 
-                  {activeWritingType.length>0 && (
-                    <button
-                      key={activeWritingType}
-                      onClick={() => {
-                        const type = writingTypes.find((t) => t.id === activeWritingType)
-                        if (type) handleWritingTypeClick(type)
-                      }}
-                      className={`px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto ${
-                        activeWritingType === activeWritingType
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
-                      }`}
-                    >
-                      {activeWritingType}
-                    </button>
-                  )}
+                    {activeWritingType.length > 0 && (
+                    (() => {
+                      const type = writingTypes.find((t) => t.id === activeWritingType)
+                      return type ? (
+                      <button
+                        key={type.id}
+                        onClick={() => handleWritingTypeClick(type)}
+                        className={`px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto bg-primary text-primary-foreground shadow-md`}
+                      >
+                        {type.label}
+                      </button>
+                      ) : null
+                    })()
+                    )}
 
                   {writingTypes.slice(1, 4).map((type) => (
                     <button

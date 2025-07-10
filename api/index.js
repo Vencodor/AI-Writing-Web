@@ -198,12 +198,12 @@ app.post('/api/rewrite', async (req, res) => {
 app.post('/api/draft', async (req, res) => {
   // 사용자로부터 입력값 받기
   const input = req.body.inputText;
-  const req = req.body.activeWritingType
+  const type = req.body.activeWritingType
   const expertiseLevel = req.body.expertiseLevel / 1 + 1;
   const textLength = req.body.textLength / 1 + 1;
   const textTone = req.body.textTone / 1 + 1;
 
-  console.log('Received input:', input, category, expertiseLevel, textLength, textTone);
+  console.log('Received input:', input, type, expertiseLevel, textLength, textTone);
   // 입력값 유효성 검사
   if (!input) {
     res.status(400).send('Error: prompt is required');
@@ -217,7 +217,7 @@ app.post('/api/draft', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    const prompt = createDraftPrompt(input, category, expertiseLevel, textLength, textTone)
+    const prompt = createDraftPrompt(input, type, expertiseLevel, textLength, textTone)
                          
     const response = await ai.models.generateContent({
       model: GEMINI_FLASH,
