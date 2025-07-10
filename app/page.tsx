@@ -53,6 +53,7 @@ export default function Component() {
   const [showUpdateLog, setShowUpdateLog] = useState(false)
   const [showError, setShowError] = useState("")
   const [showExpandedTextbox, setShowExpandedTextbox] = useState(false)
+  const [showDraftTooltip, setShowDraftTooltip] = useState(false)
   const [isDraftTextGenerating, setIsDraftTextGenerating] = useState(false)
   const [isUpdateLogClosing, setIsUpdateLogClosing] = useState(false)
   const [isExpandedTextboxClosing, setIsExpandedTextboxClosing] = useState(false)
@@ -151,30 +152,37 @@ export default function Component() {
     },
   ]
 
-  const exampleText = `
-안녕하세요. 오늘은 수능 생윤 과목의 사상가 중 한명인 임마누엘 칸트의 사상에 대하여 알아볼것입니다.
+  const exampleText = ``
 
-우선 칸트는 18세기 철학자입니다. 그는 엄격한 시간관리를 하는 사람으로 유명한데요, 그에 관련한 아주 유명한 일화를 하나 들자면 마을 사람들은 그가 정각에 산책을 나오지 않으면 시계를 의심하였다고 합니다.
+const writingTypes = [
+  // --- 온라인 & 미디어 ---
+  { id: "blogPost", label: "블로그", expertise: [2], length: [2], tone: [1] },
+  { id: "socialMediaPost", label: "SNS 게시물", expertise: [1], length: [0], tone: [0] },
+  { id: "productReview", label: "상품 리뷰", expertise: [2], length: [2], tone: [1] },
+  { id: "newsArticle", label: "뉴스 기사", expertise: [3], length: [2], tone: [4] },
+  { id: "youtubeScript", label: "유튜브 대본", expertise: [1], length: [2], tone: [1] },
+  { id: "opinionColumn", label: "칼럼", expertise: [3], length: [3], tone: [3] },
 
-그러한 칸트의 사상으로는 '선의지'가 있습니다. 선의지란, 여타 모든것에 얽매이지 않고 오직 '도덕법칙에 대한 존경'만으로 그 행위를 해야한다는 개념인데요, 칸트는 이 선의지만이 무조건적으로 옳다고 주장하였습니다.
-
-그렇다면 어떤 것이 도덕법칙이 될 수 있을까요? 이것에 관해 칸트는 '네 행위의 준칙이 보편적 입법의 원리에 부합하도록 행위하여라' 라고 말하였습니다. 여기서 '보편적 입법의 원리에 부합'한다는 것은, 만일 내 행위를 모든 사람들이 따라했을때에 문제가 생기지 않는다는것을 의미합니다
-
-이상입니다. 감사합니다.
-`
-
-  const writingTypes = [
-    { id: "academic", label: "학술", expertise: [4], length: [3], tone: [4] },
-    { id: "review", label: "리뷰", expertise: [2], length: [3], tone: [0] },
-    { id: "daily", label: "일상", expertise: [1], length: [2], tone: [0] },
-    { id: "column", label: "칼럼", expertise: [4], length: [4], tone: [1] },
-    { id: "general", label: "일반", expertise: [2], length: [2], tone: [2] },
-    { id: "business", label: "비즈니스", expertise: [3], length: [3], tone: [3] },
-    { id: "creative", label: "창작", expertise: [2], length: [4], tone: [1] },
-    { id: "technical", label: "기술", expertise: [4], length: [3], tone: [4] },
-    { id: "news", label: "뉴스", expertise: [3], length: [2], tone: [3] },
-    { id: "blog", label: "블로그", expertise: [1], length: [2], tone: [0] },
-  ]
+  // --- 비즈니스 & 업무 ---
+  { id: "businessEmail", label: "이메일", expertise: [2], length: [1], tone: [3] },
+  { id: "formalReport", label: "보고서", expertise: [3], length: [3], tone: [4] },
+  { id: "pressRelease", label: "보도자료", expertise: [3], length: [2], tone: [4] },
+  { id: "meetingMinutes", label: "회의록", expertise: [2], length: [2], tone: [4] },
+  { id: "marketingCopy", label: "광고 문구", expertise: [2], length: [0], tone: [1] },
+  { id: "presentationScript", label: "발표 대본", expertise: [2], length: [2], tone: [2] },
+  
+  // --- 학술 & 교육 ---
+  { id: "academicPaper", label: "논문", expertise: [4], length: [4], tone: [4] },
+  { id: "bookReport", label: "독후감", expertise: [2], length: [2], tone: [2] },
+  { id: "howToGuide", label: "가이드", expertise: [2], length: [3], tone: [2] },
+  
+  // --- 개인 & 창작 ---
+  { id: "dailyStory", label: "일상 글", expertise: [1], length: [1], tone: [0] },
+  { id: "coverLetter", label: "자기소개서", expertise: [2], length: [2], tone: [3] },
+  { id: "creativeStory", label: "창작 글", expertise: [2], length: [3], tone: [1] },
+  { id: "letter", label: "편지", expertise: [1], length: [1], tone: [1] },
+  { id: "faq", label: "FAQ", expertise: [2], length: [2], tone: [2] },
+];
 
   const createInitialSteps = (): ProcessStep[] => [
     {
@@ -298,14 +306,13 @@ export default function Component() {
 
   const generateDraftUrl = "https://ai-writing-web.vercel.app/api/draft"
   const startDraftProcessing = async () => {
-
     try {
       const response = await fetch(generateDraftUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ inputText, expertiseLevel, textLength, textTone }),
+        body: JSON.stringify({ inputText, activeWritingType, expertiseLevel, textLength, textTone }),
       })
       if (!response.body) return
 
@@ -351,17 +358,7 @@ export default function Component() {
   const handleSubmit = () => {
     if(isGenerating) return
     if (inputText.length < 50) {
-      setShowError(`초안 길이 부족|초안의 길이는 최소 50자가 넘어야 합니다.
-                    <button
-                      className="text-red-600 underline font-medium ml-1"
-                      onClick={() => {
-                        setInputText(exampleText)
-                        setShowError("")
-                      }}
-                    >
-                      이곳
-                    </button>
-                    을 눌러 초안을 자동으로 생성해보세요`)
+      setShowError(`초안 길이 부족|초안의 길이는 최소 50자가 넘어야 합니다.`)
       return
     }
 
@@ -379,11 +376,15 @@ export default function Component() {
 
   const handleDraftTextClick = () => {
     if(isDraftTextGenerating) {
-      setShowError("오류|이미 초안이 생성중입니다")
+      setShowError("이미 진행중|이미 초안이 생성중입니다")
       return
     }
     if(inputText.length < 10) {
       setShowError("초안 길이 부족|초안을 생성하려면 주제, 목적 등을 포함해 최소 10자가 넘어야 합니다")
+      return
+    }
+    if(!activeWritingType) {
+      setShowError("태그 설정|어떤 글의 유형을 작성할 지 선택해주세요")
       return
     }
 
@@ -391,6 +392,11 @@ export default function Component() {
     setShowError("")
 
     startDraftProcessing()
+  }
+
+  const resetTooltip = () => {
+    setShowDraftTooltip(false)
+    setShowHelpTooltip(false)
   }
 
   // 결과 출력 애니메이션
@@ -414,6 +420,15 @@ export default function Component() {
       setTimeout(animateText, 100)
     }
   }, [generatedText, isGenerating])
+
+  useEffect(() => {
+    if(showError.length>0) {
+      resetTooltip()
+      setTimeout(() => {
+        setShowError("")
+      }, 3000)
+    }
+  }, [showError])
 
   // 텍스트박스 변경 핸들러
   const textRef = useRef<any>(null)
@@ -790,17 +805,34 @@ export default function Component() {
                 className={`pt-1 transition-all duration-300 ease-out ${isSubmitted ? "opacity-80" : "opacity-100"}`}
               >
                 <div className="flex flex-wrap gap-2 justify-start relative">
-                  {/* AI추천 버튼 (그라데이션 효과) */}
-                  {(
-                    <button
-                      onClick={() => handleDraftTextClick()}
-                      className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative animate-in fade-in-0 overflow-hidden 
-                        "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"}`}
-                    >
-                      <span className="relative z-10">AI 초안 작성</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-300 via-indigo-500 to-sky-200 opacity-20"></div>
-                    </button>
-                  )}
+
+                  {/* AI 초안 작성 버튼 */}
+                  <button
+                    onClick={() => {setShowDraftTooltip(false); handleDraftTextClick()}}
+                    onMouseEnter={() => showError.length==0 && setShowDraftTooltip(true)}
+                    onMouseLeave={() => showError.length==0 && setShowDraftTooltip(false)}
+                    disabled={isDraftTextGenerating}
+                    className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative animate-in fade-in-0 overflow-hidden flex items-center space-x-2 ${
+                      isDraftTextGenerating
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                    }`}
+                  >
+                    {isDraftTextGenerating && (
+                      <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    )}
+                    <span className="relative z-10">{isDraftTextGenerating ? "초안 작성중.." : "AI 초안 작성"}</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-300 via-indigo-500 to-sky-200 opacity-20"></div>
+                  </button>
+
+                  <div>|</div>
 
                   {/* 일반 버튼들 (처음 3개) */}
                   {writingTypes.slice(1, 5).map((type) => (
@@ -1183,6 +1215,29 @@ export default function Component() {
               </div>
             )}
 
+                  {/* AI 초안 도움말 툴팁 */}
+                  {showDraftTooltip && (
+                    <div className="absolute bottom-full right-0 mb-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-sm text-gray-900">AI 초안 사용법</h3>
+                        <div className="space-y-2 text-xs text-gray-600">
+                          <div className="flex items-start space-x-2">
+                            <span className="w-1 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></span>
+                            <span>글의 초안을 빠르게 작성할 수 있도록 도와드립니다</span>
+                          </div>
+                          <div className="flex items-start space-x-2">
+                            <span className="w-1 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></span>
+                            <span>글의 주제와 목적을 텍스트박스에 입력한 후 AI 초안 작성 버튼을 누르면 AI가 출처에 기반한 초안을 작성해줍니다</span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* 툴팁 화살표 */}
+                      <div className="absolute bottom-0 right-4 transform translate-y-full">
+                        <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
+                      </div>
+                    </div>
+                  )}
+
             {/* 기존 도움말 툴팁 */}
             {showHelpTooltip && showError.length==0 && (
               <div className="absolute bottom-full right-0 mb-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
@@ -1215,6 +1270,7 @@ export default function Component() {
             )}
           </div>
         </div>
+  
         {/* 업데이트 로그 팝업 */}
         {showUpdateLog && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 ">
