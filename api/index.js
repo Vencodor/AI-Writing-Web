@@ -186,7 +186,7 @@ async function improveKoreanText(userText, res) {
   console.log("1단계: 텍스트 분석 및 진단 시작...");
   let analysisData, diagnosticsList;
   try {
-    const result = await ai.models.generateContent({ model: analysisModel, content: stage1Prompt });
+    const result = await ai.models.generateContent({ model: analysisModel, contents: stage1Prompt });
     const parsedResponse = parseJsonResponse(result.response.text());
     
     if (!parsedResponse || !parsedResponse.diagnostics) {
@@ -217,7 +217,7 @@ async function improveKoreanText(userText, res) {
       const context = getContextualSnippets(userText, item.start_index, item.end_index);
       const prompt = getStage2Prompt(analysisData, item, context);
       
-      return ai.models.generateContent({ model: refinementModel, content: prompt })
+      return ai.models.generateContent({ model: refinementModel, contents: prompt })
         .then(result => {
           const parsed = parseJsonResponse(result.response.text());
           if (!parsed || !parsed.final_rewritten_text) {
