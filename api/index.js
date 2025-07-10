@@ -76,19 +76,24 @@ function parseJsonResponse(text) {
 }
 
 /**
- * 수정 대상 세그먼트의 앞뒤 맥락을 제공하는 함수
+ * 수정 대상 세그먼트의 앞뒤 맥락을 제공합니다. (replace 방식용)
  * @param {string} fullText - 전체 원본 텍스트.
- * @param {number} startIndex - 수정 대상 세그먼트의 시작 인덱스.
- * @param {number} endIndex - 수정 대상 세그먼트의 끝 인덱스.
+ * @param {string} segment - 수정 대상 텍스트 세그먼트.
  * @param {number} [contextLength=100] - 앞뒤로 가져올 맥락의 글자 수.
- * @returns {{context_before: string, context_after: string}}
+ * @returns {{context_before: string, context_after: string} | null} 맥락 또는 세그먼트를 찾지 못하면 null.
  */
-function getContextualSnippets(fullText, startIndex, endIndex, contextLength = 100) {
+function getContextualSnippets(fullText, segment, contextLength = 100) {
+  const startIndex = fullText.indexOf(segment);
+  if (startIndex === -1) {
+    // 세그먼트를 찾지 못한 경우 (이전 수정으로 인해 텍스트가 변경된 경우)
+    return null; 
+  }
+  const endIndex = startIndex + segment.length;
+  
   const context_before = fullText.substring(Math.max(0, startIndex - contextLength), startIndex);
   const context_after = fullText.substring(endIndex, Math.min(fullText.length, endIndex + contextLength));
   return { context_before, context_after };
 }
-
 
 // --- 개선된 메인 함수 ---
 /**
@@ -133,8 +138,6 @@ async function improveKoreanText(userText, res) {
         {
           "issue_type": "The category of the issue (e.g., 'Awkward Phrasing', 'Grammar').",
           "original_text_segment": "The exact text segment with the issue.",
-          "start_index": "The starting character index of the segment.",
-          "end_index": "The ending character index of the segment.",
           "reasoning": "A brief explanation of why this segment is problematic."
         }
       ]
@@ -210,49 +213,50 @@ async function improveKoreanText(userText, res) {
     throw error;
   }
 
-  // --- 2단계: 맥락 기반 수정안 생성 (병렬 처리) ---
-  console.log("2단계: 수정안 병렬 생성 시작...");
-  try {
-    const refinementPromises = diagnosticsList.map(item => {
-      const context = getContextualSnippets(userText, item.start_index, item.end_index);
-      const prompt = getStage2Prompt(analysisData, item, context);
-      
-      return ai.models.generateContent({ model: refinementModel, contents: prompt })
-        .then(result => {
-          const parsed = parseJsonResponse(result.text);
-          if (!parsed || !parsed.final_rewritten_text) {
-             console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
-             // 파싱 실패 시 원본을 그대로 사용하도록 객체 반환
-             return { ...item, rewritten: item.original_text_segment };
-          }
-          // SSE로 각 수정 사항 진행 상황 전송 가능
-          res.write(`data: ${JSON.stringify({ rewritten: { original: item.original_text_segment, rewritten: parsed.final_rewritten_text } })}\n\n`);
-          return { ...item, rewritten: parsed.final_rewritten_text };
-        });
-    });
+        
+  // --- 2단계: 맥락 기반 수정안 생성 (순차적 replace) ---
+  console.log("2단계: 수정안 순차적 생성 시작...");
+  // 수정 과정을 추적할 변수. let으로 선언하여 계속 업데이트.
+  let currentText = userText; 
 
-    const refinementResults = await Promise.all(refinementPromises);
+  for (const item of diagnosticsList) {
+    // 매번 수정된 최신 텍스트(currentText)를 기준으로 맥락을 찾음
+    const context = getContextualSnippets(currentText, item.original_text_segment);
+    // 만약 이전 수정으로 인해 원본 세그먼트를 더 이상 찾을 수 없다면, 이번 수정은 건너뜀
+    if (!context) {
+      console.warn(`세그먼트를 찾을 수 없어 수정을 건너뜁니다: "${item.original_text_segment}"`);
+      continue; // 다음 루프로 넘어감
+    }
 
-    // --- 개선점 3: 안정적인 텍스트 재조립 ---
-    // 뒤에서부터 수정해야 인덱스가 꼬이지 않음. start_index를 기준으로 내림차순 정렬.
-    refinementResults.sort((a, b) => b.start_index - a.start_index);
-
-    let finalText = userText;
-    refinementResults.forEach(refine => {
-      finalText = 
-        finalText.substring(0, refine.start_index) + 
-        refine.rewritten + 
-        finalText.substring(refine.end_index);
-    });
+    const prompt = getStage2Prompt(analysisData, item, context);
     
-    console.log("2단계 완료: 최종 텍스트 조립 완료.",refinementResults);
-    return finalText;
+    try {
+      const result = await ai.models.generateContent({ model: refinementModel, contents: prompt });
+      const parsed = parseJsonResponse(result.text);
 
-  } catch (error) {
-    console.error("2단계 API 호출 또는 결과 조립 중 오류 발생:", error);
-    res.write(`data: ${JSON.stringify({ event: 'error', message: '2단계 수정안 생성 중 오류가 발생했습니다.' })}\n\n`);
-    throw error;
+      if (parsed && parsed.final_rewritten_text) {
+        const originalSegment = item.original_text_segment;
+        const rewrittenSegment = parsed.final_rewritten_text;
+
+        // 중요: 수정된 최신 텍스트(currentText)를 업데이트.
+        // String.prototype.replace()는 첫 번째 매칭만 바꾸므로, 순차 처리와 결합하면 안전함.
+        currentText = currentText.replace(originalSegment, rewrittenSegment);
+        
+        // SSE로 진행 상황 알림
+        res.write(`data: ${JSON.stringify({ rewritten: { original: originalSegment, rewritten: rewrittenSegment } })}\n\n`);
+      } else {
+        console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
+      }
+    } catch(error) {
+        console.error(`세그먼트 수정 중 오류 발생: "${item.original_text_segment}"`, error);
+        // 특정 항목에서 오류가 나더라도 전체 프로세스가 멈추지 않도록 계속 진행
+    }
   }
+
+console.log("2단계 완료: 최종 텍스트 조립 완료.");
+return currentText; // 모든 수정이 순차적으로 적용된 최종 텍스트
+
+    
 }
 
 
