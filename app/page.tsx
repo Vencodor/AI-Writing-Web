@@ -105,6 +105,13 @@ export default function Component() {
   // 업데이트 로그 더미 데이터
   const updateLogs = [
     {
+      version: "v2.0.0",
+      date: "2025.07.08",
+      title: "초안 생성기능 추가 & 피드백 개선",
+      changes: ["'AI 초안 생성' 버튼추가", "내부 프로세스 개선"],
+      devNote: "가장 유의미한 업데이트이므로 2.0.0 버전으로 업그레이드 되었습니다",
+    },
+    {
       version: "v1.0.7",
       date: "2025.07.08",
       title: "AI 피드백 및 UI 대폭 개선",
@@ -1288,7 +1295,7 @@ export default function Component() {
             >
               {/* 헤더 */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">글 작성</h2>
+                <h2 className="text-lg font-semibold text-gray-900"> </h2>
                 <button
                   onClick={handleCloseExpandedTextbox}
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"

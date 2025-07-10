@@ -207,6 +207,7 @@ async function improveKoreanText(userText, res) {
     }
     console.log(`1단계 완료: ${diagnosticsList.length}개의 수정 항목 발견.`,result.text);
     res.write(`data: ${JSON.stringify({ diagnostics: diagnosticsList })}\n\n`);
+    res.write(`data: ${JSON.stringify({ process: '1' })}\n\n`);
 
   } catch (error) {
     sendSseError(res, "1단계 분석 중 오류 발생", error)
@@ -219,43 +220,51 @@ async function improveKoreanText(userText, res) {
   // 수정 과정을 추적할 변수. let으로 선언하여 계속 업데이트.
   let currentText = userText; 
 
-  for (const item of diagnosticsList) {
-    // 매번 수정된 최신 텍스트(currentText)를 기준으로 맥락을 찾음
+  const refinementPromises = diagnosticsList.map(item => {
     const context = getContextualSnippets(currentText, item.original_text_segment);
     // 만약 이전 수정으로 인해 원본 세그먼트를 더 이상 찾을 수 없다면, 이번 수정은 건너뜀
     if (!context) {
       console.warn(`세그먼트를 찾을 수 없어 수정을 건너뜁니다: "${item.original_text_segment}"`);
-      continue; // 다음 루프로 넘어감
+      return { ...item, rewritten: item.original_text_segment };
     }
 
     const prompt = getStage2Prompt(analysisData, item, context);
     
     try {
-      const result = await ai.models.generateContent({ model: refinementModel, contents: prompt });
-      const parsed = parseJsonResponse(result.text);
-
-      if (parsed && parsed.final_rewritten_text) {
-        const originalSegment = item.original_text_segment;
-        const rewrittenSegment = parsed.final_rewritten_text;
-
-        // 중요: 수정된 최신 텍스트(currentText)를 업데이트.
-        // String.prototype.replace()는 첫 번째 매칭만 바꾸므로, 순차 처리와 결합하면 안전함.
-        currentText = currentText.replace(originalSegment, rewrittenSegment);
-        
-        // SSE로 진행 상황 알림
-        res.write(`data: ${JSON.stringify({ rewritten: { original: originalSegment, rewritten: rewrittenSegment } })}\n\n`);
-      } else {
-        console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
-      }
+      return ai.models.generateContent({ model: refinementModel, contents: prompt })
+      .then(result => {
+          const parsed = parseJsonResponse(result.text);
+          if (!parsed || !parsed.final_rewritten_text) {
+             console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
+             // 파싱 실패 시 원본을 그대로 사용하도록 객체 반환
+             return { ...item, rewritten: item.original_text_segment };
+          }
+          res.write(`data: ${JSON.stringify({ data: { original: item.original_text_segment, rewritten: parsed.final_rewritten_text } })}\n\n`);
+          return { ...item, rewritten: parsed.final_rewritten_text };
+        });
     } catch(error) {
         console.error(`세그먼트 수정 중 오류 발생: "${item.original_text_segment}"`, error);
         // 특정 항목에서 오류가 나더라도 전체 프로세스가 멈추지 않도록 계속 진행
     }
-  }
+  })
 
-console.log("2단계 완료: 최종 텍스트 조립 완료.");
-return currentText; // 모든 수정이 순차적으로 적용된 최종 텍스트
+  const refinementResult = await Promise.all(refinementPromises);
 
+  refinementResult.forEach(refine => {
+      if (refine?.rewritten) {
+        const originalSegment = refine.original_text_segment;
+        const rewrittenSegment = refine.rewritten;
+
+        currentText = currentText.replace(originalSegment, rewrittenSegment);
+
+      } else {
+        console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
+      }
+  })
+
+  res.write(`data: ${JSON.stringify({ process: '2' })}\n\n`);
+  console.log("2단계 완료: 최종 텍스트 조립 완료.");
+  return currentText; // 모든 수정이 순차적으로 적용된 최종 텍스트
     
 }
 
@@ -318,10 +327,8 @@ app.post('/api/draft', async (req, res) => {
   Your sole task is to generate a high-quality, well-structured article based on the user-provided topic:
   "${input}".
 
-
   To do this, you must perform web searches to gather current and factual information and then synthesize it
    into a complete article.
-
 
   Crucial instructions:
    1. No Markdown: You must not use any Markdown formatting (like ##, *, or **). The entire article must be
