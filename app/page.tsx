@@ -269,6 +269,9 @@ export default function Component() {
             if (data.process) {
               updateProcessStep(Number(data.process))
             }
+            if(data.rewritten) {
+              console.log(data.rewritten)
+            }
             if (data.diagnostics) {
               const diagnostics = data.diagnostics
               diagnostics.forEach((dia: any) => {
