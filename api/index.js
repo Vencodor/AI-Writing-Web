@@ -86,7 +86,7 @@ async function improveKoreanText(userText, res) {
   console.log("1단계: 텍스트 분석 및 진단 시작...");
   let analysisData, diagnosticsList;
   try {
-    const result = await ai.models.generateContent({ model: GEMINI_FLASH, contents: stage1Prompt });
+    const result = await ai.models.generateContent({ model: GEMINI_FLASH, contents: stage1Prompt(userText) });
     const parsedResponse = parseJsonResponse(result.text);
     
     if (!parsedResponse || !parsedResponse.diagnostics) {
@@ -242,7 +242,7 @@ app.post('/api/draft', async (req, res) => {
 });
   // --- 개선점 1: 더 정교해진 1단계 프롬프트 ---
   // start_index, end_index, reasoning을 명시적으로 요구하여 진단의 질과 후처리 안정성을 높임
-  const stage1Prompt = `
+  const stage1Prompt = (userText) => `
     You are an expert Korean editor. Your task is to analyze the provided Korean text and identify segments that need improvement.
     For each segment, provide its exact start and end character indices.
 

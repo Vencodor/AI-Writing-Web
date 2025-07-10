@@ -159,15 +159,11 @@ const writingTypes = [
   { id: "blogPost", label: "블로그", expertise: [2], length: [2], tone: [1] },
   { id: "socialMediaPost", label: "SNS 게시물", expertise: [1], length: [0], tone: [0] },
   { id: "productReview", label: "상품 리뷰", expertise: [2], length: [2], tone: [1] },
-  { id: "newsArticle", label: "뉴스 기사", expertise: [3], length: [2], tone: [4] },
-  { id: "youtubeScript", label: "유튜브 대본", expertise: [1], length: [2], tone: [1] },
   { id: "opinionColumn", label: "칼럼", expertise: [3], length: [3], tone: [3] },
 
   // --- 비즈니스 & 업무 ---
   { id: "businessEmail", label: "이메일", expertise: [2], length: [1], tone: [3] },
   { id: "formalReport", label: "보고서", expertise: [3], length: [3], tone: [4] },
-  { id: "pressRelease", label: "보도자료", expertise: [3], length: [2], tone: [4] },
-  { id: "meetingMinutes", label: "회의록", expertise: [2], length: [2], tone: [4] },
   { id: "marketingCopy", label: "광고 문구", expertise: [2], length: [0], tone: [1] },
   { id: "presentationScript", label: "발표 대본", expertise: [2], length: [2], tone: [2] },
   
