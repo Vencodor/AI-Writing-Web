@@ -99,8 +99,8 @@ function getContextualSnippets(fullText, startIndex, endIndex, contextLength = 1
  */
 async function improveKoreanText(userText, res) {
   // --- 모델 정의 ---
-  const analysisModel = "gemini-1.5-flash-latest"; // 인덱스 추출 등 더 복잡한 작업을 위해 최신 Flash 모델 권장
-  const refinementModel = "gemini-1.5-pro-latest";
+  const analysisModel = "gemini-2.5-flash-latest"; // 인덱스 추출 등 더 복잡한 작업을 위해 최신 Flash 모델 권장
+  const refinementModel = "gemini-2.5-pro-latest";
 
   // --- 개선점 1: 더 정교해진 1단계 프롬프트 ---
   // start_index, end_index, reasoning을 명시적으로 요구하여 진단의 질과 후처리 안정성을 높임
