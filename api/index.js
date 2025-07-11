@@ -219,7 +219,7 @@ app.post('/api/draft', async (req, res) => {
 
     const prompt = createDraftPrompt(input, type, expertiseLevel, textLength, textTone)
 
-    const response = await ai.models.generateContent({
+    const response = await ai.models.generateContentStream({
       model: GEMINI_FLASH,
       contents: prompt,
       config
