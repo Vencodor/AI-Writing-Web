@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import TruckLoader from "./components/loadingTruck.jsx"
 import { PenTool, Sparkles, ArrowLeft, ChevronDown, ChevronUp, CheckCircle, Circle, Clock, Copy } from "lucide-react"
+import Cookies from 'js-cookie';
 
 import "./components.css"
 
@@ -250,12 +251,13 @@ export default function Component() {
 
     try {
       // 1. 백엔드에 POST 요청 (fetch API 사용)
+      const clientId = Cookies.get('clientId');
       const response = await fetch(generateUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ inputText, expertiseLevel, textLength, textTone }),
+        body: JSON.stringify({ inputText, expertiseLevel, textLength, textTone, clientId }),
       })
 
       if (!response.body) return
@@ -312,12 +314,13 @@ export default function Component() {
   const generateDraftUrl = "https://ai-writing-web.vercel.app/api/draft"
   const startDraftProcessing = async () => {
     try {
+      const clientId = Cookies.get('clientId');
       const response = await fetch(generateDraftUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ inputText, activeWritingType, expertiseLevel, textLength, textTone }),
+        body: JSON.stringify({ inputText, activeWritingType, expertiseLevel, textLength, textTone, clientId }),
       })
       if (!response.body) return
 
@@ -736,14 +739,13 @@ export default function Component() {
           >
             {/* 로고 */}
             <div
-              className={`flex flex-col space-y-2 transition-all duration-300 ease-out ${isSubmitted ? "opacity-85" : "opacity-100"
-                }`}
+              className={`flex flex-col space-y-2 transition-all duration-300 ease-out ${isSubmitted ? "opacity-85" : "opacity-100"}`}
             >
               <div className="flex items-center space-x-2">
-                <div className="flex items-center justify-center w-8 md:w-10 h-8 md:h-10 bg-primary rounded-lg">
+                {/* 로고 클릭 시 홈으로 이동 */}
+                <a href="/" className="flex items-center justify-center w-8 md:w-10 h-8 md:h-10 bg-primary rounded-lg cursor-pointer">
                   <PenTool className="w-4 md:w-5 h-4 md:h-5 text-primary-foreground" />
-                </div>
-
+                </a>
                 <div>
                   <h1
                     className={`font-bold transition-all duration-300 ease-out ${isSubmitted ? "text-lg md:text-xl" : "text-xl md:text-2xl"

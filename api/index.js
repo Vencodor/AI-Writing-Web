@@ -168,7 +168,7 @@ async function improveKoreanText(userText, res) {
 // --- 개선된 Express 엔드포인트 ---
 // SSE 로직을 더 명확하게 분리하고 에러 처리를 강화
 app.post('/api/rewrite', async (req, res) => {
-  const { inputText } = req.body;
+  const { inputText, clientId } = req.body;
 
   if (!inputText) {
     return res.status(400).json({ error: 'inputText is required' });
@@ -190,6 +190,11 @@ app.post('/api/rewrite', async (req, res) => {
     console.error('글쓰기 개선 프로세스 중 최종 오류:', error.message);
     sendSseMessage({ event: 'error', message: error.message || '알 수 없는 오류가 발생했습니다.' });
   } finally {
+
+    if(clientId){
+      recordTokenUsage(clientId, inputText.length+finalText.length);
+    }
+
     res.end();
   }
 });
@@ -198,6 +203,7 @@ app.post('/api/rewrite', async (req, res) => {
 app.post('/api/draft', async (req, res) => {
   // 사용자로부터 입력값 받기
   const input = req.body.inputText;
+  const clientId = req.body.clientId;
   const type = req.body.activeWritingType
   const expertiseLevel = req.body.expertiseLevel / 1 + 1;
   const textLength = req.body.textLength / 1 + 1;
@@ -238,6 +244,10 @@ app.post('/api/draft', async (req, res) => {
       res.write(`data: ${JSON.stringify({ source: chunks })}\n\n`);
     }
     res.write(`data: ${JSON.stringify({ done: 'done' })}\n\n`);
+
+    if(clientId){
+      recordTokenUsage(clientId, input.length+response.text.length);
+    }
 
     res.end(); 
 
@@ -411,6 +421,18 @@ function addCitations(response) {
   }
 
   return text;
+}
+
+// --- Token usage tracking (in-memory, for demo) ---
+const tokenUsageByClient = {};
+
+function recordTokenUsage(clientId, inputTokenCount) {
+  if (!clientId) return;
+  if (!tokenUsageByClient[clientId]) {
+    tokenUsageByClient[clientId] = 0;
+  }
+  tokenUsageByClient[clientId] += inputTokenCount;
+  console.log(`Token usage for ${clientId}: ${tokenUsageByClient[clientId]}`);
 }
 
 app.listen(PORT, () => {
