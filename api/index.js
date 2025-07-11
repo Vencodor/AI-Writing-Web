@@ -4,7 +4,7 @@ const { GoogleGenAI } = require('@google/genai');
 const cors = require('cors');
 const e = require('express');
 const { send } = require('process');
-require("dotenv").config( {path: '../.env'} );
+require("dotenv").config({ path: '../.env' });
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_AI_KEY });
 console.log('GoogleGenAI initialized with API key:', process.env.GEMINI_AI_KEY);
@@ -26,10 +26,10 @@ app.use(express.json());
 const PORT = 4000;
 
 const sendSseError = (res, message, error) => {
-    console.error(message, error);
-    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
-    res.write(`data: ${JSON.stringify({ event: 'done' })}\n\n`);
-    res.end();
+  console.error(message, error);
+  res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+  res.write(`data: ${JSON.stringify({ event: 'done' })}\n\n`);
+  res.end();
 };
 
 // --- Helper Functions ---
@@ -65,10 +65,10 @@ function getContextualSnippets(fullText, segment, contextLength = 100) {
   const startIndex = fullText.indexOf(segment);
   if (startIndex === -1) {
     // 세그먼트를 찾지 못한 경우 (이전 수정으로 인해 텍스트가 변경된 경우)
-    return null; 
+    return null;
   }
   const endIndex = startIndex + segment.length;
-  
+
   const context_before = fullText.substring(Math.max(0, startIndex - contextLength), startIndex);
   const context_after = fullText.substring(endIndex, Math.min(fullText.length, endIndex + contextLength));
   return { context_before, context_after };
@@ -88,9 +88,9 @@ async function improveKoreanText(userText, res) {
   try {
     const result = await ai.models.generateContent({ model: GEMINI_FLASH, contents: stage1Prompt(userText) });
     const parsedResponse = parseJsonResponse(result.text);
-    
+
     if (!parsedResponse || !parsedResponse.diagnostics) {
-        throw new Error("1단계 분석 결과 파싱 실패");
+      throw new Error("1단계 분석 결과 파싱 실패");
     }
 
     analysisData = parsedResponse.analysis;
@@ -102,7 +102,7 @@ async function improveKoreanText(userText, res) {
       res.write(`data: ${JSON.stringify({ event: 'no_changes' })}\n\n`);
       return userText;
     }
-    console.log(`1단계 완료: ${diagnosticsList.length}개의 수정 항목 발견.`,result.text);
+    console.log(`1단계 완료: ${diagnosticsList.length}개의 수정 항목 발견.`, result.text);
     res.write(`data: ${JSON.stringify({ diagnostics: diagnosticsList })}\n\n`);
     res.write(`data: ${JSON.stringify({ process: '1' })}\n\n`);
 
@@ -111,11 +111,11 @@ async function improveKoreanText(userText, res) {
     throw error;
   }
 
-        
+
   // --- 2단계: 맥락 기반 수정안 생성 (순차적 replace) ---
   console.log("2단계: 수정안 순차적 생성 시작...");
   // 수정 과정을 추적할 변수. let으로 선언하여 계속 업데이트.
-  let currentText = userText; 
+  let currentText = userText;
 
   const refinementPromises = diagnosticsList.map(item => {
     const context = getContextualSnippets(currentText, item.original_text_segment);
@@ -126,37 +126,37 @@ async function improveKoreanText(userText, res) {
     }
 
     const prompt = getStage2Prompt(analysisData, item, context);
-    
+
     try {
       return ai.models.generateContent({ model: GEMINI_PRO, contents: prompt })
-      .then(result => {
+        .then(result => {
           const parsed = parseJsonResponse(result.text);
           if (!parsed || !parsed.final_rewritten_text) {
-             console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
-             // 파싱 실패 시 원본을 그대로 사용하도록 객체 반환
-             return { ...item, rewritten: item.original_text_segment };
+            console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
+            // 파싱 실패 시 원본을 그대로 사용하도록 객체 반환
+            return { ...item, rewritten: item.original_text_segment };
           }
           res.write(`data: ${JSON.stringify({ data: { original: item.original_text_segment, rewritten: parsed.final_rewritten_text } })}\n\n`);
           return { ...item, rewritten: parsed.final_rewritten_text };
         });
-    } catch(error) {
-        console.error(`세그먼트 수정 중 오류 발생: "${item.original_text_segment}"`, error);
-        // 특정 항목에서 오류가 나더라도 전체 프로세스가 멈추지 않도록 계속 진행
+    } catch (error) {
+      console.error(`세그먼트 수정 중 오류 발생: "${item.original_text_segment}"`, error);
+      // 특정 항목에서 오류가 나더라도 전체 프로세스가 멈추지 않도록 계속 진행
     }
   })
 
   const refinementResult = await Promise.all(refinementPromises);
 
   refinementResult.forEach(refine => {
-      if (refine?.rewritten) {
-        const originalSegment = refine.original_text_segment;
-        const rewrittenSegment = refine.rewritten;
+    if (refine?.rewritten) {
+      const originalSegment = refine.original_text_segment;
+      const rewrittenSegment = refine.rewritten;
 
-        currentText = currentText.replace(originalSegment, rewrittenSegment);
+      currentText = currentText.replace(originalSegment, rewrittenSegment);
 
-      } else {
-        console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
-      }
+    } else {
+      console.warn("2단계 수정안 파싱 실패, 원본 유지:", item.original_text_segment);
+    }
   })
 
   res.write(`data: ${JSON.stringify({ process: '2' })}\n\n`);
@@ -218,32 +218,37 @@ app.post('/api/draft', async (req, res) => {
     res.flushHeaders();
 
     const prompt = createDraftPrompt(input, type, expertiseLevel, textLength, textTone)
-                         
+
     const response = await ai.models.generateContent({
       model: GEMINI_FLASH,
       contents: prompt,
       config
     });
 
-    const parsedResponse = parseJsonResponse(response.text);
-
-    const chunks = response.candidates[0]?.groundingMetadata?.groundingChunks;
-    if (chunks && chunks.length > 0) {
-      //res.write(`data: ${JSON.stringify({ source: chunks })}\n\n`); //이거 메인화면 연동해놓기
+    for await (const chunk of response.stream) {
+      const textChunk = chunk.text;
+      if (textChunk) {
+        res.write(`data: ${JSON.stringify({ text: textChunk })}\n\n`);
+      }
     }
 
-    // 6. 최종 결과물 전송 및 스트림 종료
-    res.write(`data: ${JSON.stringify({ text: parsedResponse })}\n\n`);
-    res.write(`data: ${JSON.stringify({ event: 'done' })}\n\n`);
-    res.end();
+    const finalResponse = await result.response;
+    const chunks = finalResponse.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    
+    // groundingChunks가 있는 경우 클라이언트에 전송
+    if (chunks && chunks.length > 0) {
+      res.write(`data: ${JSON.stringify({ source: chunks })}\n\n`);
+    }
+
+    res.write(`data: ${JSON.stringify({ done: 'done' })}\n\n`);
+    res.end(); 
 
   } catch (error) {
     sendSseError(res, 'AI 글쓰기 생성 중 오류가 발생했습니다', error);
   }
 });
-  // --- 개선점 1: 더 정교해진 1단계 프롬프트 ---
-  // start_index, end_index, reasoning을 명시적으로 요구하여 진단의 질과 후처리 안정성을 높임
-  const stage1Prompt = (userText) => `
+
+const stage1Prompt = (userText) => `
     You are 'Hae-an' (혜안), a top-tier AI Korean writing consultant and diagnostician. Your core philosophy is to empower writers by providing sharp, insightful analysis, not to simply rewrite their work.
 
     Your sole task is to analyze the provided Korean text and produce a detailed diagnostic report in a strict JSON format. **You MUST NOT suggest corrections or alternative phrasings.** Your role is to be a precise diagnostician, like a doctor identifying a problem, not a surgeon performing the operation.
@@ -279,9 +284,9 @@ app.post('/api/draft', async (req, res) => {
     }
     `;
 
-  // --- 개선점 2: 맥락(Context)을 주입하는 2단계 프롬프트 ---
-  // Chain-of-Thought와 주변 맥락을 제공하여 수정 퀄리티를 극대화
-  const getStage2Prompt = (analysis, diagnosticItem, context) => `
+// --- 개선점 2: 맥락(Context)을 주입하는 2단계 프롬프트 ---
+// Chain-of-Thought와 주변 맥락을 제공하여 수정 퀄리티를 극대화
+const getStage2Prompt = (analysis, diagnosticItem, context) => `
     You are a world-class Korean linguist and professional editor. Your goal is to rewrite a single Korean text segment to perfection, considering its surrounding context.
 
     **1. Overall Document Context:**
@@ -355,64 +360,59 @@ function createDraftPrompt(raw_text, format, expertise_level, length, tone) {
   };
 
   // 2. 변환된 텍스트를 포함하여 최종 프롬프트 생성
-  return `You are Yoon-moon(윤문), an expert AI writer. Your task is to generate a well-researched article draft in a simple JSON format based on the following guidelines.
-          ### Guidelines
-          - **Core Idea:** "${raw_text}"
-          - **Format:** "${format}"
-          - **Expertise:** "${expertiseMap[expertise_level]}"
-          - **Length:** "${lengthMap[length]}"
-          - **Tone:** "${toneMap[tone]}"
+  return `Guidelines
+    Core Idea: "${raw_text}"
+    Format: "${format}"
+    Expertise: "${expertiseMap[expertise_level]}"
+    Length: "${lengthMap[length]}"
+    Tone: "${toneMap[tone]}"
 
-          ### Execution Plan
-          1.  **Research & Outline:** To ensure the content is factual, current, and deep, **you MUST perform web searches**. Based on the research, create a silent, internal logical structure for the article.
-          2.  **Draft:** Write the full article text. Synthesize the researched information with the **Core Idea**. Strictly adhere to all **Expertise**, **Length**, and **Tone** guidelines.
+    Execution Plan
+    Research & Outline: To ensure the content is factual, current, and deep, you MUST perform web searches. Based on the research, create a silent, internal logical structure for the article.
+    Draft: Write the full article text. Synthesize the researched information with the Core Idea. Strictly adhere to all Expertise, Length, and Tone guidelines.
 
-          ### Final Output (Strict JSON format)
-          You MUST output a single, valid JSON object and nothing else. No introductory text.
-          Dont include source.
-          The JSON object must contain ONLY ONE KEY: "draft".
-          Use \\n for paragraph breaks.
-
-          {
-            "draft": "The full, plain-text article draft goes here."
-          }
-          `;
+    Final Output (Plain Text Format)
+    You MUST output the article draft as plain text and nothing else.
+    Do not include any introductory text or metadata.
+    Do not include sources.
+    Your entire response should be only the article content itself. Use standard paragraph breaks.
+    `;
 }
 
 //AI 글쓰기 인라인 인용
 function addCitations(response) {
-    let text = response.text;
-    const supports = response.candidates[0]?.groundingMetadata?.groundingSupports || [];
-    const chunks = response.candidates[0]?.groundingMetadata?.groundingChunks || [];
+  let text = response.text;
+  const supports = response.candidates[0]?.groundingMetadata?.groundingSupports || [];
+  const chunks = response.candidates[0]?.groundingMetadata?.groundingChunks || [];
 
-    // Sort supports by end_index in descending order to avoid shifting issues when inserting.
-    const sortedSupports = [...supports].sort(
-        (a, b) => (b.segment?.endIndex ?? 0) - (a.segment?.endIndex ?? 0),
-    );
+  // Sort supports by end_index in descending order to avoid shifting issues when inserting.
+  const sortedSupports = [...supports].sort(
+    (a, b) => (b.segment?.endIndex ?? 0) - (a.segment?.endIndex ?? 0),
+  );
 
-    for (const support of sortedSupports) {
-        const endIndex = support.segment?.endIndex;
-        if (endIndex === undefined || !support.groundingChunkIndices?.length) {
-        continue;
-        }
-
-        const citationLinks = support.groundingChunkIndices
-        .map(i => {
-            const uri = chunks[i]?.web?.uri;
-            if (uri) {
-            return `[${i + 1}]`;
-            }
-            return null;
-        })
-        .filter(Boolean);
-
-        if (citationLinks.length > 0) {
-        const citationString = citationLinks.join(", ");
-        text = text.slice(0, endIndex) + citationString + text.slice(endIndex);
-        }
+  for (const support of sortedSupports) {
+    const endIndex = support.segment?.endIndex;
+    if (endIndex === undefined || !support.groundingChunkIndices?.length) {
+      continue;
     }
 
-    return text;
+    const citationLinks = support.groundingChunkIndices
+      .map(i => {
+        const uri = chunks[i]?.web?.uri;
+        if (uri) {
+          return `[${i + 1}]`;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    if (citationLinks.length > 0) {
+      const citationString = citationLinks.join(", ");
+      text = text.slice(0, endIndex) + citationString + text.slice(endIndex);
+    }
+  }
+
+  return text;
 }
 
 app.listen(PORT, () => {

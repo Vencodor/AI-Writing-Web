@@ -25,6 +25,12 @@ interface Source {
   url: string
 }
 
+interface Tooltip {
+  title: string
+  tips: string[]
+  type: string
+}
+
 export default function Component() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [placeholderText, setPlaceholderText] = useState("")
@@ -44,16 +50,14 @@ export default function Component() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [showProcessMap, setShowProcessMap] = useState(false)
   const [isTextareaFocused, setIsTextareaFocused] = useState(false)
-  const [showHelpTooltip, setShowHelpTooltip] = useState(false)
   const [showCopyMessage, setShowCopyMessage] = useState(false)
   const [isTextModified, setIsTextModified] = useState(false)
   const [sources, SetSources] = useState<Source[]>([])
   const [isRecentPostsOpen, setIsRecentPostsOpen] = useState(false)
   const [showMoreTypes, setShowMoreTypes] = useState(false)
+  const [showTooltip, setShowTooltip] = useState<Tooltip>()
   const [showUpdateLog, setShowUpdateLog] = useState(false)
-  const [showError, setShowError] = useState("")
   const [showExpandedTextbox, setShowExpandedTextbox] = useState(false)
-  const [showDraftTooltip, setShowDraftTooltip] = useState(false)
   const [isDraftTextGenerating, setIsDraftTextGenerating] = useState(false)
   const [isUpdateLogClosing, setIsUpdateLogClosing] = useState(false)
   const [isExpandedTextboxClosing, setIsExpandedTextboxClosing] = useState(false)
@@ -61,22 +65,6 @@ export default function Component() {
   const [mockFeedbacks, setMockFeedbacks] = useState<string[]>([])
   const [currentMockIndex, setCurrentMockIndex] = useState(0)
   const [showMockFeedback, setShowMockFeedback] = useState(false)
-
-  const svgStyle = {
-    shapeRendering: "geometricPrecision",
-    textRendering: "geometricPrecision",
-    imageRendering: "optimizeQuality",
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-  }
-
-  // 계정 정보 더미 데이터
-  const accountInfo = {
-    name: "Admin",
-    email: "aaa@example.com",
-    avatar: "/placeholder.svg?height=40&width=40",
-    plan: "Primiun",
-  }
 
   // 최근 글 목록 더미 데이터
   const recentPosts = [
@@ -102,6 +90,28 @@ export default function Component() {
       type: "리뷰",
     },
   ]
+
+  const TOOL_TIPS = { //이거 나중에 만들기
+    reset: {
+      title: "",
+      tips: [],
+      type: "",
+    },
+    welcome: {
+      title: "AI Writer 사용법",
+      tips: ["글의 초안을 입력하고 글쓰기 유형을 선택하세요"
+        , "AI 초안 작성 기능으로 초안 단계에서 도움받을 수 있습니다"
+        , "전문성 수준, 글 길이, 톤을 조절하여 맞춤 설정이 가능합니다"
+        , "버튼을 클릭하여 도움말을 끌 수 있습니다"],
+      type: ""
+    },
+    draft: {
+      title: "AI 초안 사용법",
+      tips: ["글의 초안을 빠르게 작성할 수 있도록 도와드립니다"
+        , "글의 주제와 목적을 텍스트박스에 입력한 후 AI 초안 작성 버튼을 누르면 AI가 출처에 기반한 초안을 작성합니다"],
+      type: ""
+    },
+  }
 
   // 업데이트 로그 더미 데이터
   const updateLogs = [
@@ -154,31 +164,31 @@ export default function Component() {
 
   const exampleText = ``
 
-const writingTypes = [
-  // --- 온라인 & 미디어 ---
-  { id: "blogPost", label: "블로그", expertise: [2], length: [2], tone: [1] },
-  { id: "socialMediaPost", label: "SNS 게시물", expertise: [1], length: [0], tone: [0] },
-  { id: "productReview", label: "상품 리뷰", expertise: [2], length: [2], tone: [1] },
-  { id: "opinionColumn", label: "칼럼", expertise: [3], length: [3], tone: [3] },
+  const writingTypes = [ //나중에 디자인에 구분자 만들기
+    // --- 온라인 & 미디어 ---
+    { id: "blogPost", label: "블로그", expertise: [2], length: [2], tone: [1] },
+    { id: "socialMediaPost", label: "SNS 게시물", expertise: [1], length: [0], tone: [0] },
+    { id: "productReview", label: "상품 리뷰", expertise: [2], length: [2], tone: [1] },
+    { id: "opinionColumn", label: "칼럼", expertise: [3], length: [3], tone: [3] },
 
-  // --- 비즈니스 & 업무 ---
-  { id: "businessEmail", label: "이메일", expertise: [2], length: [1], tone: [3] },
-  { id: "formalReport", label: "보고서", expertise: [3], length: [3], tone: [4] },
-  { id: "marketingCopy", label: "광고 문구", expertise: [2], length: [0], tone: [1] },
-  { id: "presentationScript", label: "발표 대본", expertise: [2], length: [2], tone: [2] },
-  
-  // --- 학술 & 교육 ---
-  { id: "academicPaper", label: "논문", expertise: [4], length: [4], tone: [4] },
-  { id: "bookReport", label: "독후감", expertise: [2], length: [2], tone: [2] },
-  { id: "howToGuide", label: "가이드", expertise: [2], length: [3], tone: [2] },
-  
-  // --- 개인 & 창작 ---
-  { id: "dailyStory", label: "일상 글", expertise: [1], length: [1], tone: [0] },
-  { id: "coverLetter", label: "자기소개서", expertise: [2], length: [2], tone: [3] },
-  { id: "creativeStory", label: "창작 글", expertise: [2], length: [3], tone: [1] },
-  { id: "letter", label: "편지", expertise: [1], length: [1], tone: [1] },
-  { id: "faq", label: "FAQ", expertise: [2], length: [2], tone: [2] },
-];
+    // --- 비즈니스 & 업무 ---
+    { id: "businessEmail", label: "이메일", expertise: [2], length: [1], tone: [3] },
+    { id: "formalReport", label: "보고서", expertise: [3], length: [3], tone: [4] },
+    { id: "marketingCopy", label: "광고 문구", expertise: [2], length: [0], tone: [1] },
+    { id: "presentationScript", label: "발표 대본", expertise: [2], length: [2], tone: [2] },
+
+    // --- 학술 & 교육 ---
+    { id: "academicPaper", label: "논문", expertise: [4], length: [4], tone: [4] },
+    { id: "bookReport", label: "독후감", expertise: [2], length: [2], tone: [2] },
+    { id: "howToGuide", label: "가이드", expertise: [2], length: [3], tone: [2] },
+
+    // --- 개인 & 창작 ---
+    { id: "dailyStory", label: "일상 글", expertise: [1], length: [1], tone: [0] },
+    { id: "coverLetter", label: "자기소개서", expertise: [2], length: [2], tone: [3] },
+    { id: "creativeStory", label: "창작 글", expertise: [2], length: [3], tone: [1] },
+    { id: "letter", label: "편지", expertise: [1], length: [1], tone: [1] },
+    { id: "faq", label: "FAQ", expertise: [2], length: [2], tone: [2] },
+  ];
 
   const createInitialSteps = (): ProcessStep[] => [
     {
@@ -206,7 +216,6 @@ const writingTypes = [
     const currentStep = processSteps[stepIndex]
 
     setCurrentStepIndex(stepIndex)
-    console.log(stepIndex)
 
     // 단계 상태 업데이트
     setProcessSteps((prevSteps) =>
@@ -271,7 +280,7 @@ const writingTypes = [
 
             if (data.text) {
               setGeneratedText(data.text)
-              
+
               setProcessSteps((prevSteps) => prevSteps.map((step) => ({ ...step, status: "completed" as const })))
               setShowProcessMap(false)
               setIsGenerating(false)
@@ -280,14 +289,14 @@ const writingTypes = [
             if (data.process) {
               updateProcessStep(Number(data.process))
             }
-            if(data.rewritten) {
-              console.log(data.rewritten)
+            if (data.rewritten) {
+              console.log(data)
             }
             if (data.diagnostics) {
               const diagnostics = data.diagnostics
               diagnostics.forEach((dia: any) => {
                 const diagnosticString = `${dia.original_text_segment} / ${dia.issue_type}`
-                setMockFeedbacks((prev)=> [...prev, diagnosticString])
+                setMockFeedbacks((prev) => [...prev, diagnosticString])
               })
               setShowMockFeedback(true)
             }
@@ -315,6 +324,8 @@ const writingTypes = [
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
 
+      setInputText("")
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -328,9 +339,7 @@ const writingTypes = [
             const data = JSON.parse(jsonString)
 
             if (data.text) {
-              setInputText(data.text.draft)
-              setIsDraftTextGenerating(false)
-              return
+              setInputText((prev) => prev + data.text)
             }
             if (data.source) {
               data.source.forEach((s: { web: any }) => {
@@ -341,7 +350,10 @@ const writingTypes = [
                 SetSources((prevSources) => [...prevSources, source])
               })
             }
-
+            if(data.done) {
+              setIsDraftTextGenerating(false)
+              return
+            }
           }
         }
       }
@@ -352,9 +364,13 @@ const writingTypes = [
   }
 
   const handleSubmit = () => {
-    if(isGenerating) return
+    if (isGenerating) return
     if (inputText.length < 50) {
-      setShowError(`초안 길이 부족|초안의 길이는 최소 50자가 넘어야 합니다.`)
+      setTooltip({
+        title: "초안 길이 부족",
+        tips: ["초안의 길이는 최소 50자가 넘어야 합니다.`"],
+        type: "error"
+      })
       return
     }
 
@@ -364,35 +380,45 @@ const writingTypes = [
     setIsRecentPostsOpen(false)
     setDisplayedText("")
     setGeneratedText("")
-    setShowError("")
+    setTooltip(TOOL_TIPS.reset)
 
     // 프로세스 시작
     startProcessing()
   }
 
   const handleDraftTextClick = () => {
-    if(isDraftTextGenerating) {
-      setShowError("이미 진행중|이미 초안이 생성중입니다")
+    if (inputText.length < 10) {
+      setTooltip({
+        title: "초안 길이 부족",
+        tips: ["초안을 생성하려면 주제, 목적 등을 포함해 최소 10자가 넘어야 합니다"],
+        type: "error"
+      })
       return
     }
-    if(inputText.length < 10) {
-      setShowError("초안 길이 부족|초안을 생성하려면 주제, 목적 등을 포함해 최소 10자가 넘어야 합니다")
-      return
-    }
-    if(!activeWritingType) {
-      setShowError("태그 설정|어떤 글의 유형을 작성할 지 선택해주세요")
+    if (!activeWritingType) {
+      setTooltip({
+        title: "태그 설정 필요",
+        tips: ["어떤 글의 유형을 작성할 지 선택해주세요"],
+        type: "error"
+      })
       return
     }
 
     setIsDraftTextGenerating(true)
-    setShowError("")
+    setTooltip(TOOL_TIPS.reset)
 
     startDraftProcessing()
   }
 
-  const resetTooltip = () => {
-    setShowDraftTooltip(false)
-    setShowHelpTooltip(false)
+  const setTooltip = (target: Tooltip) => {
+    if (showTooltip?.type == "error" && target.title.length >= 1) { //에러 표시중일땐 툴팁 변경 X
+      return;
+    }
+    if (target.title.length <= 1) {
+      setShowTooltip(undefined)
+    } else {
+      setShowTooltip(target)
+    }
   }
 
   // 결과 출력 애니메이션
@@ -418,13 +444,14 @@ const writingTypes = [
   }, [generatedText, isGenerating])
 
   useEffect(() => {
-    if(showError.length>0) {
-      resetTooltip()
+    if (showTooltip?.type == "error") {
       setTimeout(() => {
-        setShowError("")
-      }, 3000)
+        if (showTooltip?.type == "error") {
+          setTooltip(TOOL_TIPS.reset)
+        }
+      }, 5000)
     }
-  }, [showError])
+  }, [showTooltip])
 
   // 텍스트박스 변경 핸들러
   const textRef = useRef<any>(null)
@@ -644,9 +671,8 @@ const writingTypes = [
   return (
     <div className="min-h-screen bg-background">
       <div
-        className={`min-h-screen transition-all duration-300 ease-out ${
-          isSubmitted ? "md:grid md:grid-cols-[320px_1fr] flex flex-col" : "grid grid-cols-1"
-        }`}
+        className={`min-h-screen transition-all duration-300 ease-out ${isSubmitted ? "md:grid md:grid-cols-[320px_1fr] flex flex-col" : "grid grid-cols-1"
+          }`}
       >
         {/* 최근 글 목록 패널 - 오버레이 방식 */}
         {isRecentPostsOpen && (
@@ -699,22 +725,19 @@ const writingTypes = [
 
         {/* 왼쪽 입력 영역 */}
         <div
-          className={`flex flex-col transition-all duration-300 ease-out overflow-hidden ${
-            isSubmitted ? "p-3 md:p-4 lg:p-6 md:border-r border-border" : "p-4 md:p-8 justify-center items-center"
-          }`}
+          className={`flex flex-col transition-all duration-300 ease-out overflow-hidden ${isSubmitted ? "p-3 md:p-4 lg:p-6 md:border-r border-border" : "p-4 md:p-8 justify-center items-center"
+            }`}
         >
           <div
-            className={`flex flex-col w-full transition-all duration-300 ease-out ${
-              isSubmitted
-                ? "space-y-4 lg:space-y-5 max-w-full lg:max-w-sm"
-                : "space-y-4 lg:space-y-6 max-w-full lg:max-w-xl"
-            }`}
+            className={`flex flex-col w-full transition-all duration-300 ease-out ${isSubmitted
+              ? "space-y-4 lg:space-y-5 max-w-full lg:max-w-sm"
+              : "space-y-4 lg:space-y-6 max-w-full lg:max-w-xl"
+              }`}
           >
             {/* 로고 */}
             <div
-              className={`flex flex-col space-y-2 transition-all duration-300 ease-out ${
-                isSubmitted ? "opacity-85" : "opacity-100"
-              }`}
+              className={`flex flex-col space-y-2 transition-all duration-300 ease-out ${isSubmitted ? "opacity-85" : "opacity-100"
+                }`}
             >
               <div className="flex items-center space-x-2">
                 <div className="flex items-center justify-center w-8 md:w-10 h-8 md:h-10 bg-primary rounded-lg">
@@ -723,9 +746,8 @@ const writingTypes = [
 
                 <div>
                   <h1
-                    className={`font-bold transition-all duration-300 ease-out ${
-                      isSubmitted ? "text-lg md:text-xl" : "text-xl md:text-2xl"
-                    }`}
+                    className={`font-bold transition-all duration-300 ease-out ${isSubmitted ? "text-lg md:text-xl" : "text-xl md:text-2xl"
+                      }`}
                   >
                     AI Writer
                   </h1>
@@ -761,20 +783,18 @@ const writingTypes = [
                   onChange={handleInputChange}
                   onFocus={() => {
                     setIsTextareaFocused(true)
-                    setShowError("")
+                    setTooltip(TOOL_TIPS.reset)
                   }}
                   onBlur={() => setIsTextareaFocused(false)}
                   ref={textRef}
                   placeholder={isSubmitted ? "여기에 글의 주제나 내용을 입력해주세요." : placeholderText}
-                  className={`resize-none transition-all duration-400 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border-slate-300 focus:outline-none text-sm md:text-base border ${
-                    isSubmitted
-                      ? "min-h-[120px] md:min-h-[140px]"
-                      : isTextareaFocused || inputText
-                        ? "md:min-h-[200px] w-full transform"
-                        : "min-h-[120px] w-full transform scale-100"
-                  } ${inputText.length > 100 ? "min-h-[250px] md:min-h-[300px]" : ""} ${
-                    inputText.length > 300 ? "min-h-[350px] md:min-h-[400px]" : ""
-                  } ${inputText.length > 500 ? "min-h-[450px] md:min-h-[500px]" : ""}`}
+                  className={`resize-none transition-all duration-400 ease-out p-3 md:p-4 focus:ring-0 focus:ring-offset-0 focus:border-border font-light border-slate-300 focus:outline-none text-sm md:text-base border ${isSubmitted
+                    ? "min-h-[120px] md:min-h-[140px]"
+                    : isTextareaFocused || inputText
+                      ? "md:min-h-[200px] w-full transform"
+                      : "min-h-[120px] w-full transform scale-100"
+                    } ${inputText.length > 100 ? "min-h-[250px] md:min-h-[300px]" : ""} ${inputText.length > 300 ? "min-h-[350px] md:min-h-[400px]" : ""
+                    } ${inputText.length > 500 ? "min-h-[450px] md:min-h-[500px]" : ""}`}
                 />
 
                 {/* 크게보기 버튼 */}
@@ -804,15 +824,14 @@ const writingTypes = [
 
                   {/* AI 초안 작성 버튼 */}
                   <button
-                    onClick={() => {setShowDraftTooltip(false); handleDraftTextClick()}}
-                    onMouseEnter={() => showError.length==0 && setShowDraftTooltip(true)}
-                    onMouseLeave={() => showError.length==0 && setShowDraftTooltip(false)}
+                    onClick={() => { setTooltip(TOOL_TIPS.reset); handleDraftTextClick() }}
+                    onMouseEnter={() => {if(showTooltip?.type != "error") setTooltip(TOOL_TIPS.draft)}}
+                    onMouseLeave={() => {if(showTooltip?.type != "error") setTooltip(TOOL_TIPS.reset)}}
                     disabled={isDraftTextGenerating}
-                    className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative animate-in fade-in-0 overflow-hidden flex items-center space-x-2 ${
-                      isDraftTextGenerating
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
-                    }`}
+                    className={`ease-in-out px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-500 min-h-[30px] md:min-h-auto relative animate-in fade-in-0 overflow-hidden flex items-center space-x-2 ${isDraftTextGenerating
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                      }`}
                   >
                     {isDraftTextGenerating && (
                       <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -829,33 +848,32 @@ const writingTypes = [
                   </button>
 
                   <div>|</div>
-                  
+
                   {/* 일반 버튼들 */}
 
-                    {activeWritingType.length > 0 && (
+                  {activeWritingType.length > 0 && (
                     (() => {
                       const type = writingTypes.find((t) => t.id === activeWritingType)
                       return type ? (
-                      <button
-                        key={type.id}
-                        onClick={() => handleWritingTypeClick(type)}
-                        className={`px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto bg-primary text-primary-foreground shadow-md`}
-                      >
-                        {type.label}
-                      </button>
+                        <button
+                          key={type.id}
+                          onClick={() => handleWritingTypeClick(type)}
+                          className={`px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto bg-primary text-primary-foreground shadow-md`}
+                        >
+                          {type.label}
+                        </button>
                       ) : null
                     })()
-                    )}
+                  )}
 
                   {writingTypes.slice(1, 4).map((type) => (
                     <button
                       key={type.id}
                       onClick={() => handleWritingTypeClick(type)}
-                      className={`px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto ${
-                        activeWritingType === type.id
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
-                      }`}
+                      className={`px-3 py-1.5 rounded-full text-sm md:text-xs font-medium transition-all duration-200 min-h-[30px] md:min-h-auto ${activeWritingType === type.id
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                        }`}
                     >
                       {type.label}
                     </button>
@@ -882,11 +900,10 @@ const writingTypes = [
                               <button
                                 key={type.id}
                                 onClick={() => handleWritingTypeClick(type)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                                  activeWritingType === type.id
-                                    ? "bg-primary text-primary-foreground shadow-md"
-                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
-                                }`}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${activeWritingType === type.id
+                                  ? "bg-primary text-primary-foreground shadow-md"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                                  }`}
                               >
                                 {type.label}
                               </button>
@@ -909,14 +926,12 @@ const writingTypes = [
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 <button
                   onClick={toggleSettings}
-                  className={`w-full flex justify-between p-4 hover:bg-gray-100 transition-colors duration-200 text-black bg-transparent items-center ${
-                    isSubmitted ? "p-3" : "p-4"
-                  }`}
+                  className={`w-full flex justify-between p-4 hover:bg-gray-100 transition-colors duration-200 text-black bg-transparent items-center ${isSubmitted ? "p-3" : "p-4"
+                    }`}
                 >
                   <Label
-                    className={`font-medium transition-all duration-300 ease-out ${
-                      isSubmitted ? "text-sm" : "text-base"
-                    }`}
+                    className={`font-medium transition-all duration-300 ease-out ${isSubmitted ? "text-sm" : "text-base"
+                      }`}
                   >
                     글쓰기 설정
                   </Label>
@@ -932,17 +947,15 @@ const writingTypes = [
                 </button>
 
                 <div
-                  className={`overflow-hidden transition-all duration-300 ease-out ${
-                    isSettingsOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                  }`}
+                  className={`overflow-hidden transition-all duration-300 ease-out ${isSettingsOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    }`}
                 >
                   <div className={`p-4 space-y-6 bg-white ${isSubmitted ? "p-3 space-y-4" : "p-4 space-y-6"}`}>
                     {/* 글 전문성 */}
                     <div className="space-y-3">
                       <Label
-                        className={`font-medium transition-all duration-300 ease-out ${
-                          isSubmitted ? "text-sm" : "text-base"
-                        }`}
+                        className={`font-medium transition-all duration-300 ease-out ${isSubmitted ? "text-sm" : "text-base"
+                          }`}
                       >
                         글 전문성 수준
                       </Label>
@@ -955,9 +968,8 @@ const writingTypes = [
                         className="w-full"
                       />
                       <div
-                        className={`flex justify-between text-muted-foreground transition-all duration-300 ease-out ${
-                          isSubmitted ? "text-xs" : "text-sm"
-                        }`}
+                        className={`flex justify-between text-muted-foreground transition-all duration-300 ease-out ${isSubmitted ? "text-xs" : "text-sm"
+                          }`}
                       >
                         <span>일반적</span>
                         <span>보통</span>
@@ -968,9 +980,8 @@ const writingTypes = [
                     {/* 글 길이 */}
                     <div className="space-y-3">
                       <Label
-                        className={`font-medium transition-all duration-300 ease-out ${
-                          isSubmitted ? "text-sm" : "text-base"
-                        }`}
+                        className={`font-medium transition-all duration-300 ease-out ${isSubmitted ? "text-sm" : "text-base"
+                          }`}
                       >
                         글 길이
                       </Label>
@@ -983,9 +994,8 @@ const writingTypes = [
                         defaultValue={[2]}
                       />
                       <div
-                        className={`flex justify-between text-muted-foreground transition-all duration-300 ease-out ${
-                          isSubmitted ? "text-xs" : "text-sm"
-                        }`}
+                        className={`flex justify-between text-muted-foreground transition-all duration-300 ease-out ${isSubmitted ? "text-xs" : "text-sm"
+                          }`}
                       >
                         <span>짧게</span>
                         <span>보통</span>
@@ -996,9 +1006,8 @@ const writingTypes = [
                     {/* 글 톤 */}
                     <div className="space-y-3">
                       <Label
-                        className={`font-medium transition-all duration-300 ease-out ${
-                          isSubmitted ? "text-sm" : "text-base"
-                        }`}
+                        className={`font-medium transition-all duration-300 ease-out ${isSubmitted ? "text-sm" : "text-base"
+                          }`}
                       >
                         톤 앤 매너
                       </Label>
@@ -1011,9 +1020,8 @@ const writingTypes = [
                         className="w-full"
                       />
                       <div
-                        className={`flex justify-between text-muted-foreground transition-all duration-300 ease-out ${
-                          isSubmitted ? "text-xs" : "text-sm"
-                        }`}
+                        className={`flex justify-between text-muted-foreground transition-all duration-300 ease-out ${isSubmitted ? "text-xs" : "text-sm"
+                          }`}
                       >
                         <span>친근한</span>
                         <span>중립적</span>
@@ -1039,9 +1047,8 @@ const writingTypes = [
             ) : (
               <div className="space-y-3 md:space-y-2">
                 <Button
-                  className={`w-full h-12 md:h-10 text-base md:text-sm transition-all duration-300 ease-out ${
-                    !isGenerating && isTextModified ? "animate-in fade-in-0 slide-in-from-top-2" : ""
-                  }`}
+                  className={`w-full h-12 md:h-10 text-base md:text-sm transition-all duration-300 ease-out ${!isGenerating && isTextModified ? "animate-in fade-in-0 slide-in-from-top-2" : ""
+                    }`}
                   onClick={handleSubmit}
                   disabled={isGenerating || !inputText}
                 >
@@ -1095,14 +1102,14 @@ const writingTypes = [
                                 {mockFeedbacks[currentMockIndex]}
                               </p>
                             </div>
-                          </div>) : 
+                          </div>) :
                           (
                             <p className="text-sm text-gray-600">{processSteps[currentStepIndex]?.description}</p>
                           )}
                         <p className="text-xs text-gray-400 mt-2">
-                            {currentStepIndex} / {processSteps.length}
+                          {currentStepIndex} / {processSteps.length}
                         </p>
-                        
+
                       </div>
                     </div>
                   </div>
@@ -1189,20 +1196,18 @@ const writingTypes = [
         <div className="fixed bottom-4 md:bottom-6 right-4 md:right-6 z-50">
           <div className="relative">
             <button
-              onMouseEnter={() => showError.length==0 && setShowHelpTooltip(true)}
-              onMouseLeave={() => showError.length==0 && setShowHelpTooltip(false)}
+              onMouseEnter={() => {if(showTooltip?.type.length == 0 || !showTooltip) setTooltip(TOOL_TIPS.welcome)}}
+              onMouseLeave={() => {if(showTooltip?.type.length == 0) setTooltip(TOOL_TIPS.reset)}}
               onClick={() => {
-                if (showError.length>0) {
-                  setShowError("")
-                  setShowHelpTooltip(false)
+                if (showTooltip?.type == "error") {
+                  setTooltip(TOOL_TIPS.reset)
                 } else {
                 } //도움말 페이지로
               }}
-              className={`w-12 md:w-10 h-12 md:h-10 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 active:scale-95 text-base md:text-sm ${
-                showError.length>0 ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"
-              }`}
+              className={`w-12 md:w-10 h-12 md:h-10 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 active:scale-95 text-base md:text-sm ${showTooltip?.type == "error" ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"
+                }`}
             >
-              {showError.length>0 ? (
+              {showTooltip?.type == "error" ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -1211,78 +1216,68 @@ const writingTypes = [
               )}
             </button>
 
-            {/* 에러 툴팁 */}
-            {showError.length>0 && (
-              <div className="absolute bottom-full right-0 mb-2 w-80 bg-red-50 border border-red-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-red-900">{showError.split("|")[0]}</h3>
-                  <p className="text-xs text-red-700">
-                    {showError.split("|")[1]}
-                  </p>
-                </div>
-                {/* 툴팁 화살표 */}
-                <div className="absolute bottom-0 right-4 transform translate-y-full">
-                  <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-red-200"></div>
-                </div>
-              </div>
-            )}
+            {/* 종합적 툴팁 */}
+            {showTooltip && (
+              <div>
+                {showTooltip.type.length == 0 && (
+                  <div className="absolute bottom-full right-0 mb-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                    <div className="space-y-3">
+                      <h3 className={`font-semibold text-sm text-gray-900}`}>{showTooltip.title}</h3>
 
-                  {/* AI 초안 도움말 툴팁 */}
-                  {showDraftTooltip && (
-                    <div className="absolute bottom-full right-0 mb-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-                      <div className="space-y-3">
-                        <h3 className="font-semibold text-sm text-gray-900">AI 초안 사용법</h3>
+                      {showTooltip.tips.map((msg) => (
                         <div className="space-y-2 text-xs text-gray-600">
                           <div className="flex items-start space-x-2">
                             <span className="w-1 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></span>
-                            <span>글의 초안을 빠르게 작성할 수 있도록 도와드립니다</span>
-                          </div>
-                          <div className="flex items-start space-x-2">
-                            <span className="w-1 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></span>
-                            <span>글의 주제와 목적을 텍스트박스에 입력한 후 AI 초안 작성 버튼을 누르면 AI가 출처에 기반한 초안을 작성해줍니다</span>
+                            <span>{msg}</span>
                           </div>
                         </div>
-                      </div>
-                      {/* 툴팁 화살표 */}
-                      <div className="absolute bottom-0 right-4 transform translate-y-full">
-                        <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
-                      </div>
+                      ))}
                     </div>
-                  )}
 
-            {/* 기존 도움말 툴팁 */}
-            {showHelpTooltip && showError.length==0 && (
-              <div className="absolute bottom-full right-0 mb-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm text-gray-900">AI Writer 사용법</h3>
-                  <div className="space-y-2 text-xs text-gray-600">
-                    <div className="flex items-start space-x-2">
-                      <span className="w-1 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></span>
-                      <span>글 주제와 목적을 입력하고 원하는 글쓰기 유형을 선택하세요</span>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <span className="w-1 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></span>
-                      <span>전문성 수준, 글 길이, 톤을 조절하여 맞춤 설정이 가능합니다</span>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <span className="w-1 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></span>
-                      <span>AI가 5단계 프로세스를 거쳐 고품질의 글을 생성합니다</span>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <span className="w-1 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></span>
-                      <span>결과가 마음에 들지 않으면 기존 텍스트를 수정 후 '글 재생성' 버튼으로 다시 시도하세요</span>
+                    {/* 툴팁 화살표 */}
+                    <div className="absolute bottom-0 right-4 transform translate-y-full">
+                      <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
                     </div>
                   </div>
-                </div>
-                {/* 툴팁 화살표 */}
-                <div className="absolute bottom-0 right-4 transform translate-y-full">
-                  <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
-                </div>
+                )}
+
+                {showTooltip.type == "error" && (
+                  <div className="absolute bottom-full right-0 mb-2 w-80 bg-red-50 border border-red-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-sm text-red-900">{showTooltip.title}</h3>
+
+                      {showTooltip.tips.map((msg) => (
+                        <p className="text-xs text-red-700">
+                          <span>{msg}</span>
+                        </p>
+                      ))}
+                    </div>
+                    <div className="absolute bottom-0 right-4 transform translate-y-full">
+                      <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-red-200"></div>
+                    </div>
+                  </div>
+                )}
+
+                {showTooltip.type == "inform" && (
+                  <div className="absolute bottom-full right-0 mb-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                    <div className="space-y-3">
+                      <h3 className={`font-semibold text-sm text-purple-700}`}>{showTooltip.title}</h3>
+                      {showTooltip.tips.map((msg) => (
+                        <p className="text-xs text-purple-500">
+                          <span>{msg}</span>
+                        </p>
+                      ))}
+                    </div>{/* 툴팁 화살표 */}
+                    <div className="absolute bottom-0 right-4 transform translate-y-full">
+                      <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
-  
+
         {/* 업데이트 로그 팝업 */}
         {showUpdateLog && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 ">
