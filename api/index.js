@@ -231,16 +231,14 @@ app.post('/api/draft', async (req, res) => {
         res.write(`data: ${JSON.stringify({ text: textChunk })}\n\n`);
       }
     }
-
-    const finalResponse = await result.response;
-    const chunks = finalResponse.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     
     // groundingChunks가 있는 경우 클라이언트에 전송
     if (chunks && chunks.length > 0) {
       res.write(`data: ${JSON.stringify({ source: chunks })}\n\n`);
     }
-
     res.write(`data: ${JSON.stringify({ done: 'done' })}\n\n`);
+
     res.end(); 
 
   } catch (error) {
