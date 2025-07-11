@@ -211,6 +211,14 @@ export default function Component() {
       status: "pending",
     },
   ]
+  
+  useEffect(() => {
+    let clientId = Cookies.get('clientId');
+    if (!clientId) {
+      clientId = crypto.randomUUID();
+      Cookies.set('clientId', clientId, { path: '/', sameSite: 'lax', expires: 365 });
+    }
+  }, []);
 
   // 프로세스 단계 업데이트 함수
   const updateProcessStep = (stepIndex: number) => {
