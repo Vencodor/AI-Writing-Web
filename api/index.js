@@ -231,9 +231,12 @@ app.post('/api/draft', async (req, res) => {
       config
     });
 
+    let fullText = '';
+
     for await (const chunk of response) {
       const textChunk = chunk.text;
       if (textChunk) {
+        fullText += textChunk;
         res.write(`data: ${JSON.stringify({ text: textChunk })}\n\n`);
       }
     }
@@ -246,7 +249,7 @@ app.post('/api/draft', async (req, res) => {
     res.write(`data: ${JSON.stringify({ done: 'done' })}\n\n`);
 
     if(clientId){
-      recordTokenUsage(clientId, input.length+response.text.length);
+      recordTokenUsage(clientId, input.length+fullText.length);
     }
 
     res.end(); 
