@@ -4,6 +4,7 @@ const { GoogleGenAI } = require('@google/genai');
 const cors = require('cors');
 const e = require('express');
 const { send } = require('process');
+const jsCookie = require('js-cookie');
 require("dotenv").config({ path: '../.env' });
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_AI_KEY });
@@ -31,6 +32,17 @@ const sendSseError = (res, message, error) => {
   res.write(`data: ${JSON.stringify({ event: 'done' })}\n\n`);
   res.end();
 };
+
+useEffect(() => {
+  jsCookie.then(mod => {
+    const Cookies = mod.default;
+    let clientId = Cookies.get('clientId');
+    if (!clientId) {
+      clientId = crypto.randomUUID();
+      Cookies.set('clientId', clientId, { path: '/', sameSite: 'lax', expires: 365 });
+    }
+  });
+}, []);
 
 // --- Helper Functions ---
 /**
