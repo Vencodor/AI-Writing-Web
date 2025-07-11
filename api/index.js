@@ -225,7 +225,7 @@ app.post('/api/draft', async (req, res) => {
       config
     });
 
-    for await (const chunk of response.stream) {
+    for await (const chunk of response) {
       const textChunk = chunk.text;
       if (textChunk) {
         res.write(`data: ${JSON.stringify({ text: textChunk })}\n\n`);
