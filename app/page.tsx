@@ -291,6 +291,8 @@ export default function Component() {
             if (data.text) {
               setGeneratedText(data.text)
 
+              console.log(data.text)
+
               setProcessSteps((prevSteps) => prevSteps.map((step) => ({ ...step, status: "completed" as const })))
               setShowProcessMap(false)
               setIsGenerating(false)
