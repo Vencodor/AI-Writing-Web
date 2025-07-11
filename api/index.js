@@ -186,14 +186,14 @@ app.post('/api/rewrite', async (req, res) => {
   try {
     const finalText = await improveKoreanText(inputText, res);
     sendSseMessage({ event: 'done', text: finalText });
+
+    if(clientId){
+      recordTokenUsage(clientId, inputText.length+finalText.length);
+    }
   } catch (error) {
     console.error('글쓰기 개선 프로세스 중 최종 오류:', error.message);
     sendSseMessage({ event: 'error', message: error.message || '알 수 없는 오류가 발생했습니다.' });
   } finally {
-    if(clientId){
-      recordTokenUsage(clientId, inputText.length+finalText.length);
-    }
-
     res.end();
   }
 });
