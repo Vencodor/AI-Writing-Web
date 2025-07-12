@@ -727,7 +727,7 @@ export default function Component() {
                 ) : (
                   // --- 요청사항 3번: 동적 텍스트 렌더링 로직 적용 ---
                   <div className="prose max-w-none prose-p:leading-relaxed prose-p:whitespace-pre-line text-gray-800">
-                    {isTextAnimating ? displayedText : renderDynamicText(generatedText)}
+                    {displayedText}
                   </div>
                 )}
               </div>

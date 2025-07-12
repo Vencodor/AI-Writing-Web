@@ -310,7 +310,7 @@ app.post('/api/draft/outline', async (req, res) => {
 
         // 개요 생성은 스트리밍이 아닌, 완전한 JSON 객체를 받아야 함
         const result = await ai.models.generateContent({
-            model: GEMINI_PRO, // 개요 생성은 논리적 구조화가 중요하므로 PRO 모델 권장
+            model: GEMINI_FLASH, // 개요 생성은 논리적 구조화가 중요하므로 PRO 모델 권장
             contents: prompt,
             tools: [groundingTool],
         });
