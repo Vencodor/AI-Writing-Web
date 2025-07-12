@@ -165,3 +165,57 @@
     background-position: 180px;
   }
 }
+
+/*ai추가*/
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 600ms linear;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+@keyframes highlight-border {
+  0% { border-color: #e2e8f0; box-shadow: 0 0 0px 0px rgba(167, 139, 250, 0); }
+  25% { border-color: #a78bfa; box-shadow: 0 0 8px 0px rgba(167, 139, 250, 0.3); }
+  50% { border-color: #e2e8f0; box-shadow: 0 0 0px 0px rgba(96, 165, 250, 0); }
+  75% { border-color: #60a5fa; box-shadow: 0 0 8px 0px rgba(96, 165, 250, 0.3); }
+  100% { border-color: #e2e8f0; box-shadow: 0 0 0px 0px rgba(167, 139, 250, 0); }
+}
+.textarea-highlight {
+  animation: highlight-border 3s ease-in-out infinite;
+}
+.truck-wrapper{--w:8;--h:5;--d:5;--br:0.2rem;--box-d:1.5s;--hl-d:calc(var(--box-d)/4);--sh-d:calc(var(--box-d)/2);width:calc(var(--w)*1rem);height:calc(var(--h)*1rem);margin:auto;position:relative;transform:rotateY(-15deg) rotateX(15deg) translateZ(calc(var(--h)/2*1rem));transform-style:preserve-3d}
+.truck-wrapper .truck{width:100%;height:100%;transform-style:preserve-3d;animation:var(--sh-d) ease-in-out infinite alternate anim-shadow}
+@keyframes anim-shadow{0%{transform:translateY(calc(100% + 2rem)) scale(0.8);opacity:0.2}100%{transform:translateY(calc(100% + 2rem)) scale(1);opacity:0.5}}
+.truck-wrapper .truck:before{content:"";width:calc(var(--w)*1rem + 2rem);height:calc(var(--d)*1rem + 2rem);position:absolute;left:-1rem;top:calc(var(--h)*-1rem - 1rem);background-color:rgba(0,0,0,0.15);border-radius:50%;transform:rotateX(90deg) translateZ(-2rem) scaleY(0.7)}
+.truck-wrapper .truck>div{position:absolute;width:100%;height:100%;transform-style:preserve-3d}
+.truck-wrapper .truck>div:after,.truck-wrapper .truck>div:before{content:"";position:absolute}
+.truck-wrapper .truck .truck-container{transform:translateZ(calc(var(--d)/2*1rem));animation:var(--box-d) ease-in-out infinite normal anim-container}
+@keyframes anim-container{25%,75%{transform:translateZ(calc(var(--d)/2*1rem)) rotateY(0)}50%,100%{transform:translateZ(calc(var(--d)/2*1rem)) rotateY(-30deg)}}
+.truck-wrapper .truck .truck-container:after,.truck-wrapper .truck .truck-container:before{width:100%;height:100%;background-color:#5a5a5a;left:0;top:0}
+.truck-wrapper .truck .truck-container:before{transform:rotateY(90deg) translateZ(calc(var(--w)/2*1rem)) translateX(calc(var(--w)/2*1rem));height:calc(var(--h)*1rem)}
+.truck-wrapper .truck .truck-container:after{transform:rotateX(90deg) translateZ(calc(var(--h)/2*1rem)) translateY(calc(var(--h)/2*1rem));height:calc(var(--d)*1rem)}
+.truck-wrapper .truck .glases{width:calc(var(--w)/2*1rem);height:calc(var(--h)/2*1rem);background-color:rgba(120,200,255,0.7);transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/-4*1rem)) translateX(calc(var(--w)/4*1rem));animation:var(--box-d) ease-in-out infinite normal anim-glases}
+@keyframes anim-glases{25%,75%{transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/-4*1rem)) translateX(calc(var(--w)/4*1rem)) rotateY(0)}50%,100%{transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/-4*1rem)) translateX(calc(var(--w)/4*1rem)) rotateY(-30deg)}}
+.truck-wrapper .truck .glases:after,.truck-wrapper .truck .glases:before{width:100%;height:100%;background-color:rgba(120,200,255,0.7)}
+.truck-wrapper .truck .glases:before{transform:rotateY(90deg) translateZ(calc(var(--w)/4*1rem)) translateX(calc(var(--w)/-4*1rem));width:calc(var(--d)/2*1rem)}
+.truck-wrapper .truck .glases:after{transform:rotateX(90deg) translateZ(calc(var(--h)/4*1rem)) translateY(calc(var(--h)/-4*1rem));height:calc(var(--d)/2*1rem)}
+.truck-wrapper .truck .bonet{width:calc(var(--w)/2*1rem);height:calc(var(--h)/2*1rem);background-color:#d82929;transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/4*1rem)) translateX(calc(var(--w)/4*1rem));animation:var(--box-d) ease-in-out infinite normal anim-bonet}
+@keyframes anim-bonet{25%,75%{transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/4*1rem)) translateX(calc(var(--w)/4*1rem)) rotateY(0)}50%,100%{transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/4*1rem)) translateX(calc(var(--w)/4*1rem)) rotateY(-30deg)}}
+.truck-wrapper .truck .bonet:after,.truck-wrapper .truck .bonet:before{width:100%;height:100%;background-color:#d82929}
+.truck-wrapper .truck .bonet:before{transform:rotateY(90deg) translateZ(calc(var(--w)/4*1rem)) translateX(calc(var(--w)/-4*1rem));width:calc(var(--d)/2*1rem)}
+.truck-wrapper .truck .bonet:after{transform:rotateX(90deg) translateZ(calc(var(--h)/4*1rem)) translateY(calc(var(--h)/-4*1rem));height:calc(var(--d)/2*1rem)}
+.truck-wrapper .truck .base{width:calc(var(--w)*1rem);height:calc(var(--d)*1rem);background-color:#444;transform:rotateX(90deg) translateZ(calc(var(--h)/-2*1rem)) translateY(calc(var(--d)/2*1rem));box-shadow:0 0 2rem rgba(0,0,0,0.4)}
+.truck-wrapper .truck .wheel-back,.truck-wrapper .truck .wheel-front{width:calc(var(--h)/2*1rem);height:calc(var(--h)/2*1rem);background-color:#222;border-radius:50%;transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/2*1rem)) rotateX(90deg);animation:var(--box-d) ease-in-out infinite normal anim-wheels-back}
+@keyframes anim-wheels-back{0%,25%{transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/2*1rem)) rotateX(90deg) rotate(0)}50%,100%{transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/2*1rem)) rotateX(90deg) rotate(-1turn)}}
+.truck-wrapper .truck .wheel-back:after,.truck-wrapper .truck .wheel-front:after{content:"";position:absolute;width:100%;height:100%;background-color:#222;border-radius:50%;transform:translateZ(calc(var(--d)*-1rem))}
+.truck-wrapper .truck .wheel-front{transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/2*1rem)) translateX(calc(var(--w)*1rem)) rotateX(90deg);animation-name:anim-wheels-front}
+@keyframes anim-wheels-front{0%,25%{transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/2*1rem)) translateX(calc(var(--w)*1rem)) rotateX(90deg) rotate(0)}50%,100%{transform:translateZ(calc(var(--d)/2*1rem)) translateY(calc(var(--h)/2*1rem)) translateX(calc(var(--w)*0.75rem)) rotateX(90deg) rotate(-1turn)}}
+.truck-wrapper .truck .smoke{width:calc(var(--w)/8*1rem);height:calc(var(--w)/8*1rem);background-color:rgba(180,180,180,0.5);border-radius:50%;transform:translateX(calc(var(--w)*-0.25rem)) translateY(calc(var(--h)*-0.25rem));animation:var(--sh-d) ease-in-out infinite normal anim-smoke}
+@keyframes anim-smoke{0%{transform:translateX(calc(var(--w)*-0.25rem)) translateY(calc(var(--h)*-0.25rem)) scale(1);opacity:0}25%{transform:translateX(calc(var(--w)*-0.75rem)) translateY(calc(var(--h)*-1.25rem)) scale(1.5);opacity:0.5}50%,100%{transform:translateX(calc(var(--w)*-1rem)) translateY(calc(var(--h)*-2rem)) scale(2);opacity:0}}
