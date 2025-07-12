@@ -198,64 +198,196 @@ app.post('/api/rewrite', async (req, res) => {
   }
 });
 
-// AI 초안작성을 위한 스트리밍 사이트 (정보탐색, 적극적 글쓰기)
-app.post('/api/draft', async (req, res) => {
-  // 사용자로부터 입력값 받기
-  const input = req.body.inputText;
-  const clientId = req.body.clientId;
-  const type = req.body.activeWritingType
-  const expertiseLevel = req.body.expertiseLevel / 1 + 1;
-  const textLength = req.body.textLength / 1 + 1;
-  const textTone = req.body.textTone / 1 + 1;
+/**
+ * 1단계: 개요 생성을 위한 프롬프트를 생성합니다.
+ * AI가 웹 검색을 통해 사실 기반의 체계적인 개요를 JSON 형식으로 만들도록 지시합니다.
+ * @param {string} raw_text - 사용자가 입력한 글의 주제 또는 핵심 아이디어
+ * @param {string} format - 글의 용도 (예: "칼럼", "블로그 포스트")
+ * @returns {string} - 개요 생성을 위한 AI 프롬프트
+ */
+function createOutlinePrompt(raw_text, format) {
+  return `
+    You are an expert content strategist and researcher named 'Architect'.
+    Your task is to create a comprehensive, logical, and well-structured outline for an article based on the user's request.
+    To ensure accuracy and depth, you MUST use web search to gather relevant, up-to-date information.
 
-  console.log('Received input:', input, type, expertiseLevel, textLength, textTone);
-  // 입력값 유효성 검사
-  if (!input) {
-    res.status(400).send('Error: prompt is required');
-    return;
-  }
+    **Article Request:**
+    - Core Idea: "${raw_text}"
+    - Format: "${format}"
 
-  try {
+    **Execution Plan:**
+    1.  **Research:** Perform web searches to understand the topic, find key facts, arguments, and supporting data.
+    2.  **Structure:** Organize the researched information into a logical flow (Introduction, Body Paragraphs, Conclusion).
+    3.  **Output:** Present the final plan as a single, valid JSON object. The structure must be clear and easy for another writer to follow.
+
+    **JSON Output Structure (Strictly Adhere to this):**
+    Your entire output MUST be a single JSON object inside a \`\`\`json code block.
+
+    \`\`\`json
+    {
+      "title": "A compelling and relevant title for the article",
+      "outline": [
+        {
+          "type": "introduction",
+          "title": "서론: 독자의 흥미를 끄는 시작",
+          "description": "글의 주제를 소개하고, 독자가 왜 이 글을 읽어야 하는지에 대한 핵심 질문이나 흥미로운 사실을 제시합니다."
+        },
+        {
+          "type": "body",
+          "title": "본론 1: 첫 번째 핵심 주장 또는 정보",
+          "description": "첫 번째 주요 포인트를 설명합니다. 포함할 구체적인 데이터, 예시, 또는 논거를 요약합니다."
+        },
+        {
+          "type": "body",
+          "title": "본론 2: 두 번째 핵심 주장 또는 정보",
+          "description": "두 번째 주요 포인트를 설명합니다. 첫 번째 본론과 자연스럽게 연결되도록 구성합니다."
+        },
+        // (Add more body sections as needed based on the topic's complexity)
+        {
+          "type": "conclusion",
+          "title": "결론: 내용 요약 및 마무리",
+          "description": "글의 핵심 내용을 요약하고, 독자에게 전달하고 싶은 최종 메시지나 행동 촉구를 제시하며 마무리합니다."
+        }
+      ]
+    }
+    \`\`\`
+  `;
+}
+
+/**
+ * 2단계: 확정된 개요를 바탕으로 본문 작성을 위한 프롬프트를 생성합니다.
+ * AI가 주어진 구조와 톤앤매너에 따라 완성된 글을 스트리밍으로 작성하도록 지시합니다.
+ * @param {object} finalizedOutline - 사용자가 확정한 개요 JSON 객체
+ * @param {number} expertiseLevel - 전문성 수준 (1-5)
+ * @param {number} textLength - 글 길이 (1-5)
+ * @param {number} textTone - 톤앤매너 (1-5)
+ * @returns {string} - 본문 생성을 위한 AI 프롬프트
+ */
+function createBodyFromOutlinePrompt(finalizedOutline, expertiseLevel, textLength, textTone) {
+    const expertiseMap = { 1: "Childlike simplicity", 2: "Beginner level", 3: "General audience", 4: "Informed audience", 5: "Expert level" };
+    const lengthMap = { 1: "Very short (~100 words)", 2: "Short (~200 words)", 3: "Medium (~500 words)", 4: "Long (~800 words)", 5: "Very long (1200+ words)" };
+    const toneMap = { 1: "Emotional & Sincere", 2: "Witty & Humorous", 3: "Friendly & Casual (-해요 체)", 4: "Professional & Persuasive (-습니다 체)", 5: "Objective & Informative (-다 체)" };
+
+    // 개요 객체를 문자열로 변환하여 프롬프트에 삽입
+    const outlineString = JSON.stringify(finalizedOutline, null, 2);
+
+    return `
+    You are a professional writer named 'Weaver'. Your task is to write a complete, high-quality article based *strictly* on the provided outline.
+
+    **Writing Guidelines:**
+    - Expertise: "${expertiseMap[expertiseLevel]}"
+    - Approximate Length: "${lengthMap[textLength]}"
+    - Tone & Manner: "${toneMap[textTone]}"
+
+    **Article Blueprint (MUST Follow This Structure):**
+    \`\`\`json
+    ${outlineString}
+    \`\`\`
+
+    **Execution Instructions:**
+    - Write the full article by fleshing out each section from the blueprint.
+    - Ensure smooth transitions between paragraphs.
+    - Strictly adhere to all guidelines (Expertise, Length, Tone).
+    - **Your output MUST be ONLY the final article text in plain Korean.**
+    - Do NOT include the title, section headers (like "서론:"), or any other metadata in your response. Just write the flowing content of the article.
+  `;
+}
+
+/**
+ * 1단계: 개요 생성 API
+ * 사용자의 주제를 받아 AI가 분석 및 웹 검색 후 글의 개요를 JSON으로 반환합니다.
+ */
+app.post('/api/draft/outline', async (req, res) => {
+    const { inputText, clientId, activeWritingType } = req.body;
+
+    if (!inputText) {
+        return res.status(400).json({ error: 'inputText (주제) is required' });
+    }
+    console.log(`[1단계] 개요 생성 요청 수신: ${inputText}`);
+
+    try {
+        const prompt = createOutlinePrompt(inputText, activeWritingType);
+
+        // 개요 생성은 스트리밍이 아닌, 완전한 JSON 객체를 받아야 함
+        const result = await ai.models.generateContent({
+            model: GEMINI_PRO, // 개요 생성은 논리적 구조화가 중요하므로 PRO 모델 권장
+            contents: prompt,
+            tools: [groundingTool],
+        });
+
+        const parsedOutline = parseJsonResponse(result.text);
+
+        if (!parsedOutline || !parsedOutline.outline) {
+            console.error("개요 생성 실패 또는 AI 응답 파싱 실패:", result.text);
+            return res.status(500).json({ error: 'Failed to generate a valid outline from AI.' });
+        }
+
+        console.log(`[1단계] 개요 생성 완료. 클라이언트로 전송.`);
+        res.status(200).json(parsedOutline);
+
+        // 토큰 사용량 기록 (입력값 기준)
+        if (clientId) {
+            recordTokenUsage(clientId, inputText.length);
+        }
+
+    } catch (error) {
+        console.error('개요 생성 중 오류 발생:', error);
+        res.status(500).json({ error: 'An error occurred while generating the outline.' });
+    }
+});
+
+
+/**
+ * 2단계: 본문 생성 API (스트리밍)
+ * 클라이언트가 수정/확정한 개요(JSON)를 받아 AI가 본문을 스트리밍으로 작성합니다.
+ */
+app.post('/api/draft/generate', async (req, res) => {
+    const { finalizedOutline, clientId, expertiseLevel, textLength, textTone } = req.body;
+    
+    if (!finalizedOutline || !Array.isArray(finalizedOutline.outline)) {
+        return res.status(400).json({ error: 'finalizedOutline (개요) is required in the correct format.' });
+    }
+    console.log(`[2단계] 확정된 개요 기반 본문 생성 요청 수신.`);
+
     // 1. SSE(Server-Sent Events)를 위한 HTTP 헤더 설정
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
-
-    const prompt = createDraftPrompt(input, type, expertiseLevel, textLength, textTone)
-
-    const response = await ai.models.generateContentStream({
-      model: GEMINI_FLASH,
-      contents: prompt,
-      config
-    });
-
-    let fullText = '';
-
-    for await (const chunk of response) {
-      const textChunk = chunk.text;
-      if (textChunk) {
-        fullText += textChunk;
-        res.write(`data: ${JSON.stringify({ text: textChunk })}\n\n`);
-      }
-    }
-    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     
-    // groundingChunks가 있는 경우 클라이언트에 전송
-    if (chunks && chunks.length > 0) {
-      res.write(`data: ${JSON.stringify({ source: chunks })}\n\n`);
+    try {
+        const prompt = createBodyFromOutlinePrompt(finalizedOutline, expertiseLevel, textLength, textTone);
+        
+        const responseStream = await ai.models.generateContentStream({
+            model: GEMINI_FLASH, // 본문 작성은 속도가 중요하므로 Flash 모델 권장
+            contents: prompt,
+        });
+
+        let fullText = '';
+        for await (const chunk of responseStream) {
+            const textChunk = chunk.text;
+            if (textChunk) {
+                fullText += textChunk;
+                // 스트리밍으로 텍스트 조각 전송
+                res.write(`data: ${JSON.stringify({ text: textChunk })}\n\n`);
+            }
+        }
+        
+        // 스트리밍 완료 메시지 전송
+        res.write(`data: ${JSON.stringify({ event: 'done' })}\n\n`);
+        console.log(`[2단계] 본문 스트리밍 완료.`);
+
+        // 토큰 사용량 기록 (최종 생성된 텍스트 기준)
+        if(clientId){
+            recordTokenUsage(clientId, fullText.length);
+        }
+        
+    } catch (error)
+    {
+        sendSseError(res, 'AI 본문 생성 중 오류가 발생했습니다', error);
+    } finally {
+        res.end(); // 스트림 연결 종료
     }
-    res.write(`data: ${JSON.stringify({ done: 'done' })}\n\n`);
-
-    if(clientId){
-      recordTokenUsage(clientId, input.length+fullText.length);
-    }
-
-    res.end(); 
-
-  } catch (error) {
-    sendSseError(res, 'AI 글쓰기 생성 중 오류가 발생했습니다', error);
-  }
 });
 
 const stage1Prompt = (userText) => `
@@ -387,42 +519,6 @@ function createDraftPrompt(raw_text, format, expertise_level, length, tone) {
     Do not include sources.
     Your entire response should be only the article content itself. Use standard paragraph breaks.
     `;
-}
-
-//AI 글쓰기 인라인 인용
-function addCitations(response) {
-  let text = response.text;
-  const supports = response.candidates[0]?.groundingMetadata?.groundingSupports || [];
-  const chunks = response.candidates[0]?.groundingMetadata?.groundingChunks || [];
-
-  // Sort supports by end_index in descending order to avoid shifting issues when inserting.
-  const sortedSupports = [...supports].sort(
-    (a, b) => (b.segment?.endIndex ?? 0) - (a.segment?.endIndex ?? 0),
-  );
-
-  for (const support of sortedSupports) {
-    const endIndex = support.segment?.endIndex;
-    if (endIndex === undefined || !support.groundingChunkIndices?.length) {
-      continue;
-    }
-
-    const citationLinks = support.groundingChunkIndices
-      .map(i => {
-        const uri = chunks[i]?.web?.uri;
-        if (uri) {
-          return `[${i + 1}]`;
-        }
-        return null;
-      })
-      .filter(Boolean);
-
-    if (citationLinks.length > 0) {
-      const citationString = citationLinks.join(", ");
-      text = text.slice(0, endIndex) + citationString + text.slice(endIndex);
-    }
-  }
-
-  return text;
 }
 
 // --- Token usage tracking (in-memory, for demo) ---
