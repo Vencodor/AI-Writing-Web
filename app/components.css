@@ -167,6 +167,7 @@
 }
 
 /*ai추가*/
+
 @keyframes ripple {
   to {
     transform: scale(4);
